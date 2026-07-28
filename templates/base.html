@@ -74,10 +74,10 @@
     </div>
     <div class="sidebar-sub-menu {{ 'open' if laporan_active else '' }}" id="sidebar-laporan-menu">
       {% set laporan_nav = [
-        ('laporan_evaluasi',    'fa-star-half-stroke', 'Lap. Evaluasi'),
-        ('laporan_visualisasi', 'fa-chart-line',    'Lap. Visualisasi'),
-        ('laporan_interpretasi','fa-lightbulb',        'Lap. Interpretasi'),
-        ('laporan_hasil',       'fa-table-list',       'Lap. Hasil'),
+        ('laporan_evaluasi',    'fa-star-half-stroke', 'Evaluasi'),
+        ('laporan_visualisasi', 'fa-chart-line',    'Visualisasi'),
+        ('laporan_interpretasi','fa-lightbulb',        'Interpretasi'),
+        ('laporan_hasil',       'fa-table-list',       'Hasil'),
       ] %}
       {% for endpoint, icon, label in laporan_nav %}
       <a href="{{ url_for(endpoint) }}"
@@ -144,6 +144,10 @@
     <span>{{ label }}</span>
   </a>
   {% endfor %}
+  <a href="{{ url_for('logout') }}" class="bottom-nav-item bottom-nav-logout">
+    <i class="fa-solid fa-right-from-bracket"></i>
+    <span>Logout</span>
+  </a>
 </nav>
 
 <!-- ── Scripts ──────────────────────────────────────── -->
@@ -151,6 +155,70 @@
 <script>
 (function () {
   'use strict';
+
+  /* ── Table Pagination Utility ── */
+  window.initTablePagination = function(tableId, pageSize) {
+    pageSize = pageSize || 50;
+    var table = document.getElementById(tableId);
+    if (!table) return;
+    var tbody = table.querySelector('tbody');
+    if (!tbody) return;
+    var rows = Array.from(tbody.querySelectorAll('tr'));
+    if (rows.length <= pageSize) return; // tidak perlu pagination
+    var totalPages = Math.ceil(rows.length / pageSize);
+    var currentPage = 1;
+
+    function showPage(page) {
+      currentPage = page;
+      var start = (page - 1) * pageSize;
+      var end = start + pageSize;
+      rows.forEach(function(row, idx) {
+        row.style.display = (idx >= start && idx < end) ? '' : 'none';
+      });
+      renderControls();
+    }
+
+    function renderControls() {
+      var existing = document.getElementById(tableId + '-pagination');
+      if (existing) existing.remove();
+
+      var wrap = document.createElement('div');
+      wrap.id = tableId + '-pagination';
+      wrap.className = 'table-pagination no-print';
+      wrap.innerHTML =
+        '<div class="pagination-info">Baris ' +
+          ((currentPage - 1) * pageSize + 1) + '–' +
+          Math.min(currentPage * pageSize, rows.length) +
+          ' dari ' + rows.length +
+        '</div>' +
+        '<div class="pagination-controls">' +
+          '<button class="pg-btn" id="' + tableId + '-first" ' + (currentPage === 1 ? 'disabled' : '') + '>' +
+            '<i class="fa-solid fa-angles-left"></i>' +
+          '</button>' +
+          '<button class="pg-btn" id="' + tableId + '-prev" ' + (currentPage === 1 ? 'disabled' : '') + '>' +
+            '<i class="fa-solid fa-angle-left"></i> Prev' +
+          '</button>' +
+          '<span class="pg-indicator">Hal ' + currentPage + ' / ' + totalPages + '</span>' +
+          '<button class="pg-btn" id="' + tableId + '-next" ' + (currentPage === totalPages ? 'disabled' : '') + '>' +
+            'Next <i class="fa-solid fa-angle-right"></i>' +
+          '</button>' +
+          '<button class="pg-btn" id="' + tableId + '-last" ' + (currentPage === totalPages ? 'disabled' : '') + '>' +
+            '<i class="fa-solid fa-angles-right"></i>' +
+          '</button>' +
+        '</div>';
+
+      table.closest('.table-responsive') ?
+        table.closest('.table-responsive').after(wrap) :
+        table.after(wrap);
+
+      document.getElementById(tableId + '-first').addEventListener('click', function() { showPage(1); });
+      document.getElementById(tableId + '-prev').addEventListener('click', function() { if (currentPage > 1) showPage(currentPage - 1); });
+      document.getElementById(tableId + '-next').addEventListener('click', function() { if (currentPage < totalPages) showPage(currentPage + 1); });
+      document.getElementById(tableId + '-last').addEventListener('click', function() { showPage(totalPages); });
+    }
+
+    showPage(1);
+  };
 
   /* Auto-dismiss alerts */
   document.querySelectorAll('.alert.alert-dismissible').forEach(el => {
@@ -222,5 +290,6 @@
   }());
 }());
 </script>
+{% block scripts %}{% endblock %}
 </body>
 </html>

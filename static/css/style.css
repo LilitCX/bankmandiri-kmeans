@@ -345,6 +345,59 @@ strong, b { font-weight: 700; color: var(--nb-black); }
 .bottom-nav-item span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; text-align: center; }
 .bottom-nav-item.active { color: var(--nb-yellow); }
 .bottom-nav-item:hover { color: var(--nb-yellow); text-decoration: none; }
+.bottom-nav-logout { color: #EF4444 !important; }
+.bottom-nav-logout:hover { color: #DC2626 !important; }
+
+/* ============================================================
+   TABLE PAGINATION
+============================================================ */
+.table-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px 4px 4px;
+}
+.pagination-info {
+  font-size: 13px;
+  color: #64748B;
+  font-weight: 600;
+}
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.pg-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border: 2px solid #1A1A1A;
+  border-radius: 6px;
+  background: var(--nb-white);
+  color: var(--nb-black);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.pg-btn:hover:not(:disabled) {
+  background: var(--nb-yellow);
+  color: var(--nb-black);
+}
+.pg-btn:disabled {
+  opacity: 0.38;
+  cursor: default;
+}
+.pg-indicator {
+  font-size: 12px;
+  font-weight: 700;
+  color: #374151;
+  padding: 0 6px;
+  white-space: nowrap;
+}
 
 /* ============================================================
    MAIN CONTENT
@@ -1327,6 +1380,9 @@ hr { border-color: var(--nb-black); opacity: 1; border-width: 2px; }
   .laporan-table tbody tr:hover td { background: transparent !important; }
   .laporan-signature-block { page-break-inside: avoid; margin-top: 32px; }
   body { font-size: 11pt; }
+  /* Sembunyikan pagination saat print, tampilkan semua baris */
+  .no-print { display: none !important; }
+  .table-responsive table tbody tr { display: table-row !important; }
 }
 
 /* ============================================================

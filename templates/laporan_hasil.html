@@ -142,7 +142,7 @@
     {% set colors    = ['#2563EB','#F97316','#22C55E','#8B5CF6','#EF4444','#EC4899','#14B8A6','#6366F1','#FFE44D','#64748B'] %}
     {% set bg_colors = ['#DBEAFE','#FFEDD5','#DCFCE7','#F3E8FF','#FEE2E2','#FCE7F3','#CCFBF1','#E0E7FF','#FEF9C3','#F1F5F9'] %}
     <div class="table-responsive" style="border-radius:8px;overflow:hidden;border:2px solid #E2E8F0;box-shadow:none;">
-      <table class="laporan-table">
+      <table class="laporan-table" id="tbl-laporan-hasil">
         <thead>
           <tr>
             {% for col in preview[0].keys() %}
@@ -206,11 +206,11 @@
       </table>
     </div>
 
-    {% if total_filtered > 100 %}
-    <div class="laporan-note" style="margin-top:12px;">
+    {% if total_filtered > 50 %}
+    <div class="laporan-note no-print" style="margin-top:12px;">
       <i class="fa-solid fa-circle-info me-1"></i>
-      Halaman ini menampilkan <strong>100 baris pertama</strong> dari total <strong>{{ total_filtered }}</strong> hasil.
-      Gunakan tombol <strong>Download CSV</strong> di atas untuk mendapatkan data lengkap.
+      Gunakan navigasi halaman di bawah tabel untuk melihat semua <strong>{{ total_filtered }}</strong> data.
+      Saat print/PDF semua data akan ditampilkan.
     </div>
     {% endif %}
 
@@ -260,4 +260,12 @@
   </div>
 
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  initTablePagination('tbl-laporan-hasil', 50);
+});
+</script>
 {% endblock %}

@@ -63,7 +63,7 @@
       <p style="font-size:11px;font-weight:700;color:#6B7280;text-transform:uppercase;
                 letter-spacing:.6px;margin-bottom:8px;">Sampel Komentar Tertinggi (Silhouette)</p>
       <div class="table-responsive">
-        <table class="table table-bordered table-hover mb-0">
+        <table class="table table-bordered table-hover mb-0" id="tbl-interpretasi-{{ item.cluster }}">
           <thead>
             <tr>
               <th style="width:46%;">Komentar Asli</th>
@@ -99,4 +99,14 @@
   Belum ada data clustering. <a href="{{ url_for('clustering') }}" style="color:var(--nb-black);font-weight:700;">Jalankan clustering terlebih dahulu.</a>
 </div>
 {% endfor %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  {% for item in state.cluster_summary %}
+  initTablePagination('tbl-interpretasi-{{ item.cluster }}', 50);
+  {% endfor %}
+});
+</script>
 {% endblock %}

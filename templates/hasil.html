@@ -56,7 +56,7 @@
     {% set dark_text  = [False,False,False,False,False,False,False,False,True,False] %}
     {% set bg_colors  = ['#DBEAFE','#FFEDD5','#DCFCE7','#F3E8FF','#FEE2E2','#FCE7F3','#CCFBF1','#E0E7FF','#FEF9C3','#F1F5F9'] %}
     <div class="table-responsive">
-      <table class="table table-bordered table-hover mb-0">
+      <table class="table table-bordered table-hover mb-0" id="tbl-hasil">
         <thead>
           <tr>
             {% for col in preview[0].keys() %}
@@ -128,4 +128,12 @@
     {% endif %}
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  initTablePagination('tbl-hasil', 50);
+});
+</script>
 {% endblock %}

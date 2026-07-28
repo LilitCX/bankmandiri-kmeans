@@ -25,16 +25,9 @@
 
         <form method="POST" enctype="multipart/form-data">
           <div class="row g-3 align-items-end">
-            <div class="col-md-5">
+            <div class="col-md-9">
               <label class="form-label">Pilih File CSV</label>
               <input type="file" name="csv_file" class="form-control" accept=".csv" required>
-            </div>
-            <div class="col-md-4">
-              <label class="form-label">Opsi Filter</label>
-              <select name="filter_type" class="form-select">
-                <option value="all">Semua Data</option>
-                <option value="bank_only">Hanya Data Banking</option>
-              </select>
             </div>
             <div class="col-md-3">
               <button class="btn btn-primary w-100">
@@ -59,7 +52,7 @@
           <li>Encoding: UTF-8 / UTF-8-BOM / Latin-1</li>
           <li>Ukuran maks: <strong>32 MB</strong></li>
           <li>Kolom wajib: <code>komentar</code></li>
-          <li>Filter banking butuh kolom <code>is_banking</code></li>
+          <li>Kolom opsional: <code>no, tanggal, username</code></li>
         </ul>
       </div>
     </div>
@@ -79,7 +72,7 @@
       </a>
     </div>
     <div class="table-responsive">
-      <table class="table table-bordered table-hover mb-0">
+      <table class="table table-bordered table-hover mb-0" id="tbl-dataset">
         <thead>
           <tr>
             {% for col in raw_preview[0].keys() %}<th>{{ col }}</th>{% endfor %}
@@ -100,4 +93,12 @@
   </div>
 </div>
 {% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  initTablePagination('tbl-dataset', 50);
+});
+</script>
 {% endblock %}

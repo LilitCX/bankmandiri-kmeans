@@ -147,7 +147,7 @@ def dataset():
             return redirect(url_for("dataset"))
 
         try:
-            filter_type = request.form.get("filter_type", "all")
+            filter_type = "all"
             load_dataset(filepath, "Dataset berhasil diunggah.", filter_type=filter_type)
         except Exception as exc:
             set_error(f"File gagal dibaca: {exc}")
@@ -446,7 +446,7 @@ def laporan_hasil():
 
     clean_result    = STATE["result_df"].dropna(subset=["cluster"])
     cluster_options = sorted(clean_result["cluster"].astype(int).unique().tolist())
-    preview         = df.head(100).to_dict(orient="records")
+    preview         = df.to_dict(orient="records")
 
     return render_template(
         "laporan_hasil.html",
@@ -491,7 +491,7 @@ def hasil():
 
     clean_result   = STATE["result_df"].dropna(subset=["cluster"])
     cluster_options = sorted(clean_result["cluster"].astype(int).unique().tolist())
-    preview        = df.head(100).to_dict(orient="records")
+    preview        = df.to_dict(orient="records")
 
     return render_template(
         "hasil.html",
