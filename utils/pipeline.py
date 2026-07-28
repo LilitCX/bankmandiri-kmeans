@@ -678,28 +678,10 @@ def run_clustering(
 
     best_sil_idx = int(np.argmax(sil_list)) if sil_list else None
 
-    # Hitung Davies-Bouldin Index untuk setiap k
-    from sklearn.metrics import davies_bouldin_score
-    dbi_list = []
-    for k in k_values:
-        km_tmp = KMeans(n_clusters=k, random_state=42, n_init=10, max_iter=300)
-        lbl_tmp = km_tmp.fit_predict(X_lsa)
-        try:
-            dbi_list.append(float(davies_bouldin_score(X_lsa, lbl_tmp)))
-        except Exception:
-            dbi_list.append(float("inf"))
-
-    best_dbi_idx = int(np.argmin(dbi_list)) if dbi_list else None
-    final_dbi = float(davies_bouldin_score(X_lsa, df["cluster"]))
-
     rekomendasi_k = {
         "silhouette": {
             "k": int(k_values[best_sil_idx]) if best_sil_idx is not None else None,
             "nilai": round(float(sil_list[best_sil_idx]), 4) if best_sil_idx is not None else None,
-        },
-        "davies_bouldin": {
-            "k": int(k_values[best_dbi_idx]) if best_dbi_idx is not None else None,
-            "nilai": round(float(dbi_list[best_dbi_idx]), 4) if best_dbi_idx is not None else None,
         },
         "dipilih": int(jumlah_cluster),
     }
@@ -732,7 +714,6 @@ def run_clustering(
         "lsa_shape": [int(X_lsa.shape[0]), int(X_lsa.shape[1])],
         "variansi_lsa": round(var_lsa, 4),
         "silhouette": round(final_sil, 4),
-        "davies_bouldin": round(final_dbi, 4),
         "sastrawi_ok": bool(SASTRAWI_OK),
         "wordcloud_ok": bool(WORDCLOUD_OK),
         "summary": summary,
@@ -752,7 +733,6 @@ def run_clustering(
             "k_values": k_values,
             "inertia": [round(x, 4) for x in inertia_list],
             "silhouette": [round(x, 4) for x in sil_list],
-            "davies_bouldin": [round(x, 4) for x in dbi_list],
             "rekomendasi_k": rekomendasi_k,
         },
         "files": {

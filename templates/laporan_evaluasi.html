@@ -3,13 +3,13 @@
 
 <div class="page-header">
   <h1><i class="fa-solid fa-star-half-stroke me-2"></i>Laporan Evaluasi Cluster</h1>
-  <p>Ringkasan performa model clustering — Elbow Method, Silhouette Score, Davies-Bouldin Index.</p>
+  <p>Ringkasan performa model clustering — Elbow Method, Silhouette Score.</p>
 </div>
 
 <div class="laporan-toolbar">
   <span class="laporan-toolbar-title">
     <i class="fa-solid fa-star-half-stroke me-1" style="color:var(--nb-blue);"></i>
-    Laporan Evaluasi — Elbow Method, Silhouette Score, Davies-Bouldin Index.
+    Laporan Evaluasi — Elbow Method, Silhouette Score.
   </span>
   <div class="laporan-toolbar-actions">
     <a href="{{ url_for('download_laporan_evaluasi') }}" class="btn btn-success btn-sm" target="_blank">
@@ -49,18 +49,10 @@
       <span class="meta-label">Silhouette Score</span>
       <span class="meta-value">{{ state.metrics.silhouette_score }}</span>
     </div>
-    <div class="laporan-meta-item">
-      <span class="meta-label">Davies-Bouldin Index</span>
-      <span class="meta-value">{{ state.metrics.davies_bouldin_score }}</span>
-    </div>
     {% if state.best_k %}
     <div class="laporan-meta-item">
       <span class="meta-label">K Terbaik (Silhouette)</span>
       <span class="meta-value">{{ state.best_k.silhouette.k }}</span>
-    </div>
-    <div class="laporan-meta-item">
-      <span class="meta-label">K Terbaik (DBI)</span>
-      <span class="meta-value">{{ state.best_k.davies_bouldin.k }}</span>
     </div>
     {% endif %}
   </div>
@@ -84,10 +76,6 @@
       <div class="laporan-metric-tile accent-green">
         <span class="tile-label">Silhouette Score</span>
         <span class="tile-value">{{ state.metrics.silhouette_score }}</span>
-      </div>
-      <div class="laporan-metric-tile accent-red">
-        <span class="tile-label">Davies-Bouldin</span>
-        <span class="tile-value">{{ state.metrics.davies_bouldin_score }}</span>
       </div>
       <div class="laporan-metric-tile accent-orange">
         <span class="tile-label">Fitur TF-IDF</span>
@@ -172,12 +160,6 @@
           <small style="font-size:13px;font-weight:600;color:#374151;">({{ state.best_k.silhouette.nilai }})</small>
         </span>
       </div>
-      <div class="laporan-metric-tile accent-red">
-        <span class="tile-label">K Terbaik DBI</span>
-        <span class="tile-value">{{ state.best_k.davies_bouldin.k }}
-          <small style="font-size:13px;font-weight:600;color:#374151;">({{ state.best_k.davies_bouldin.nilai }})</small>
-        </span>
-      </div>
     </div>
   </div>
   {% endif %}
@@ -252,7 +234,6 @@
     <strong><i class="fa-solid fa-circle-info me-1"></i>Catatan Interpretasi:</strong>
     Silhouette Score mendekati 1 menunjukkan cluster yang kompak dan terpisah baik. Nilai rendah (0.1–0.3)
     masih wajar untuk data komentar media sosial karena teks pendek, tidak baku, dan topik sering tumpang tindih.
-    Davies-Bouldin Index yang lebih rendah menunjukkan cluster yang lebih baik.
   </div>
 
   {# ── No data fallback ── #}

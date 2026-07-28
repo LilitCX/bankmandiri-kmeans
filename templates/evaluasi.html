@@ -3,7 +3,7 @@
 
 <div class="page-header">
   <h1><i class="fa-solid fa-star-half-stroke me-2"></i>Evaluasi Cluster</h1>
-  <p>Elbow Method (SSE), Silhouette Score, dan Davies-Bouldin Index.</p>
+  <p>Elbow Method (SSE) dan Silhouette Score.</p>
 </div>
 
 <div class="d-flex justify-content-end mb-4">
@@ -18,7 +18,6 @@
     ('Total Data', state.metrics.total_data, 'accent-blue'),
     ('Jumlah Cluster', state.metrics.jumlah_cluster, 'accent-purple'),
     ('Silhouette Score', state.metrics.silhouette_score, 'accent-green'),
-    ('Davies-Bouldin', state.metrics.davies_bouldin_score, 'accent-red'),
   ] %}
   <div class="col-6 col-md-3">
     <div class="metric-card {{ acc }}">
@@ -64,9 +63,8 @@
   {% for label, val, sub in [
     ('K Dipilih', state.best_k.dipilih, ''),
     ('K Terbaik Silhouette', state.best_k.silhouette.k, 'Nilai ' ~ state.best_k.silhouette.nilai),
-    ('K Terbaik DBI', state.best_k.davies_bouldin.k, 'Nilai ' ~ state.best_k.davies_bouldin.nilai),
   ] %}
-  <div class="col-md-4">
+  <div class="col-md-6">
     <div class="metric-card accent-yellow text-center">
       <p>{{ label }}</p>
       <h3 style="font-size:30px;">{{ val }}</h3>
@@ -145,17 +143,9 @@
   </div>
 </div>
 
-<!-- DBI chart -->
 <div class="custom-card">
   <div class="card-body">
-    <div class="chart-header">
-      <h5 class="chart-title">Davies-Bouldin Index per K</h5>
-      <button class="btn-download-chart" onclick="downloadChart('dbiChart','dbi.png')">
-        <i class="fa-solid fa-download"></i> PNG
-      </button>
-    </div>
-    <div class="chart-wrapper"><canvas id="dbiChart"></canvas></div>
-    <div class="alert alert-info mt-4 mb-0">
+    <div class="alert alert-info mb-0">
       <i class="fa-solid fa-circle-info me-2"></i>
       <strong>Catatan:</strong> Silhouette rendah masih wajar untuk komentar media sosial — teks pendek, tidak baku, dan topik sering tumpang tindih.
     </div>
@@ -166,7 +156,6 @@
 const eL = {{ state.eval_labels|tojson }};
 const eS = {{ state.eval_sse|tojson }};
 const eSil = {{ state.eval_silhouette|tojson }};
-const eDbi = {{ state.eval_dbi|tojson }};
 const cQ = {{ state.cluster_quality|tojson }};
 const CC = ["#2563EB","#F97316","#22C55E","#8B5CF6","#EF4444","#EC4899","#14B8A6","#6366F1"];
 
@@ -177,7 +166,7 @@ const lineOpts = (color) => ({
            y:{grid:{color:'#E5E7EB'},ticks:{color:'#374151'}} }
 });
 
-[['sseChart',eS,'#2563EB'],['silChart',eSil,'#22C55E'],['dbiChart',eDbi,'#EF4444']].forEach(([id,data,col])=>{
+[['sseChart',eS,'#2563EB'],['silChart',eSil,'#22C55E']].forEach(([id,data,col])=>{
   new Chart(document.getElementById(id), {
     type:'line',
     data:{ labels:eL, datasets:[{ data, borderColor:col, backgroundColor:col+'22',
