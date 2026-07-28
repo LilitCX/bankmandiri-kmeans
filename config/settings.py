@@ -46,3 +46,7 @@ KMEANS_MAX_ITER: int = 500
 KMEANS_N_INIT_DEFAULT: int = 15
 TSNE_N_ITER: int = 1000
 TOPIC_FEATURE_WEIGHT: float = 8.0
+
+# ── Supabase ──────────────────────────────────────────────────────────────────
+SUPABASE_URL: str = os.environ.get("SUPABASE_URL", "")
+SUPABASE_KEY: str = os.environ.get("SUPABASE_KEY", "")

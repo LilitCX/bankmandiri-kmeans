@@ -508,6 +508,10 @@ def run_clustering(
     processed_df=None,
     preprocessing_stats=None,
 ):
+    # Di Vercel, gunakan /tmp untuk folder yang writable
+    if os.environ.get("VERCEL"):
+        result_dir = os.path.join("/tmp", os.path.basename(result_dir))
+    
     os.makedirs(result_dir, exist_ok=True)
     jumlah_cluster = _safe_int(jumlah_cluster, 5)
     min_kata_raw = _safe_int(min_kata_raw, 3)

@@ -1,0 +1,33 @@
+services:
+  - type: web
+    name: bankmandiri-dashboard
+    env: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "gunicorn app:app --bind 0.0.0.0:$PORT --timeout 120 --workers 1"
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: FLASK_DEBUG
+        value: "0"
+      - key: APP_USERNAME
+        sync: false      # isi manual di Render dashboard
+      - key: APP_PASSWORD
+        sync: false      # isi manual di Render dashboard
+
+      # ── Supabase — untuk persistent clustering results ────────────────────
+      - key: USE_SUPABASE
+        value: "1"
+      - key: SUPABASE_URL
+        sync: false      # isi dari Supabase dashboard: Settings → API
+      - key: SUPABASE_KEY
+        sync: false      # isi dari Supabase dashboard: Settings → API (anon key)
+
+      # ── Cloudinary — untuk persistent file uploads ────────────────────────
+      - key: USE_CLOUDINARY
+        value: "1"
+      - key: CLOUDINARY_CLOUD_NAME
+        value: "ya1ygzke"
+      - key: CLOUDINARY_API_KEY
+        value: "295147772859723"
+      - key: CLOUDINARY_API_SECRET
+        sync: false      # isi dengan TlZZ2vGcoR9lwKMrGO_pAG3jY4o di dashboard

@@ -29,6 +29,8 @@ from config.settings import (
 )
 from services.dataset_service import apply_metadata, load_dataset, try_restore_latest
 from services.state import STATE, reset_messages, set_error, set_message
+from services.storage import save_upload, ensure_result_dir
+from services.db import save_clustering_result, delete_old_clustering_results
 from utils.pipeline import TextPreprocessor, run_clustering
 
 import functools
@@ -138,7 +140,11 @@ def dataset():
             return redirect(url_for("dataset"))
 
         filepath = os.path.join(UPLOAD_FOLDER, file.filename)
-        file.save(filepath)
+        try:
+            filepath = save_upload(file, file.filename, UPLOAD_FOLDER)
+        except Exception as exc:
+            set_error(f"File gagal disimpan: {exc}")
+            return redirect(url_for("dataset"))
 
         try:
             filter_type = request.form.get("filter_type", "all")
@@ -311,7 +317,7 @@ def clustering():
 
         try:
             result_id  = uuid.uuid4().hex[:8]
-            result_dir = os.path.join(RESULTS_FOLDER, result_id)
+            result_dir = ensure_result_dir(os.path.join(RESULTS_FOLDER, result_id))
             metadata   = run_clustering(
                 csv_path          = STATE["upload_path"],
                 result_dir        = result_dir,
@@ -322,6 +328,17 @@ def clustering():
                 preprocessing_stats = STATE["preprocessing_stats"],
             )
             apply_metadata(metadata, result_dir)
+            # Simpan ke Supabase agar persisten lintas restart
+            save_clustering_result(
+                result_id=result_id,
+                metadata=metadata,
+                username=session.get("username", "unknown"),
+            )
+            # Bersihkan hasil lama (simpan 5 terakhir per user)
+            delete_old_clustering_results(
+                keep_last=5,
+                username=session.get("username", "unknown"),
+            )
         except Exception as exc:
             set_error(f"Clustering gagal: {exc}")
             return redirect(url_for("clustering"))

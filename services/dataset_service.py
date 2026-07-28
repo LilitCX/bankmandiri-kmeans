@@ -21,6 +21,8 @@ except Exception:
     _WORDCLOUD_OK = False
 
 from services.state import STATE
+from services.db import get_latest_clustering_result
+from services.storage import get_file_path
 from config.settings import RESULTS_FOLDER
 
 
@@ -43,13 +45,18 @@ def load_dataset(filepath: str, source_message: str, filter_type: str = "all") -
     Parameters
     ----------
     filepath : str
-        Path absolut atau relatif ke file CSV.
+        Path lokal atau URL Cloudinary ke file CSV.
     source_message : str
         Pesan sukses yang akan disimpan di STATE["message"].
     filter_type : str
         "all" → semua data; "bank_only" → filter kolom is_banking == True.
     """
-    df = _read_csv_robust(filepath)
+    # Resolve URL Cloudinary ke path lokal jika perlu
+    local_path = get_file_path(filepath)
+    if local_path is None:
+        raise ValueError(f"File tidak ditemukan atau gagal diakses: {filepath}")
+
+    df = _read_csv_robust(local_path)
 
     if filter_type == "bank_only" and "is_banking" in df.columns:
         df = df[
@@ -204,9 +211,23 @@ def apply_metadata(metadata: dict, result_dir: str) -> None:
 
 
 def try_restore_latest() -> bool:
-    """Muat ulang hasil clustering terakhir dari disk jika STATE kosong."""
+    """Muat ulang hasil clustering terakhir dari Supabase atau disk jika STATE kosong."""
     if STATE["result_df"] is not None:
         return True
+    
+    # Prioritas 1: Coba dari Supabase
+    metadata = get_latest_clustering_result()
+    if metadata:
+        try:
+            # Metadata dari Supabase tidak punya result_dir, gunakan /tmp
+            result_dir = "/tmp/restored_results"
+            apply_metadata(metadata, result_dir)
+            STATE["message"] = "Hasil clustering terakhir berhasil dimuat dari database."
+            return True
+        except Exception as e:
+            print(f"[ERROR] Gagal restore dari Supabase: {e}")
+    
+    # Prioritas 2: Fallback ke disk lokal (untuk dev lokal)
     if not os.path.isdir(RESULTS_FOLDER):
         return False
 
@@ -223,7 +244,7 @@ def try_restore_latest() -> bool:
         with open(latest, "r", encoding="utf-8") as f:
             metadata = json.load(f)
         apply_metadata(metadata, os.path.dirname(latest))
-        STATE["message"] = "Hasil clustering terakhir berhasil dimuat ulang."
+        STATE["message"] = "Hasil clustering terakhir berhasil dimuat ulang dari disk."
         return True
     except Exception:
         return False
