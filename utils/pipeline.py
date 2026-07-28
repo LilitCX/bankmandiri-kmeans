@@ -486,16 +486,28 @@ def create_wordclouds(df, result_dir, jumlah_cluster):
         text = " ".join(df.loc[df["cluster"] == c, "komentar_bersih"].astype(str).tolist()).strip()
         if not text:
             continue
-        wc = WordCloud(width=900, height=450, background_color="white", collocations=False).generate(text)
-        filename = f"wordcloud_cluster_{c}.png"
-        output_path = os.path.join(result_dir, filename)
-        plt.figure(figsize=(9, 4.5))
-        plt.imshow(wc, interpolation="bilinear")
-        plt.axis("off")
-        plt.tight_layout()
-        plt.savefig(output_path, dpi=140, bbox_inches="tight")
-        plt.close()
-        paths[str(c)] = filename
+        try:
+            wc = WordCloud(
+                width=900, height=450,
+                background_color="white",
+                collocations=False,
+                prefer_horizontal=0.9,
+            ).generate(text)
+            filename = f"wordcloud_cluster_{c}.png"
+            output_path = os.path.join(result_dir, filename)
+            plt.figure(figsize=(9, 4.5))
+            plt.imshow(wc, interpolation="bilinear")
+            plt.axis("off")
+            plt.tight_layout()
+            plt.savefig(output_path, dpi=140, bbox_inches="tight")
+            plt.close("all")
+            paths[str(c)] = filename
+        except Exception as exc:
+            print(f"[WORDCLOUD ERROR cluster {c}] {exc}")
+            try:
+                plt.close("all")
+            except Exception:
+                pass
     return paths
 
 

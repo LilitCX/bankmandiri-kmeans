@@ -100,8 +100,13 @@ def make_wordcloud_b64(text: str) -> str | None:
         return None
     try:
         wc = (
-            WordCloud(width=900, height=450, background_color="white",
-                      collocations=False, max_words=100)
+            WordCloud(
+                width=900, height=450,
+                background_color="white",
+                collocations=False,
+                max_words=100,
+                prefer_horizontal=0.9,
+            )
             .generate(str(text))
         )
         buf = io.BytesIO()
@@ -110,11 +115,18 @@ def make_wordcloud_b64(text: str) -> str | None:
         plt.axis("off")
         plt.tight_layout(pad=0)
         plt.savefig(buf, format="png", bbox_inches="tight", pad_inches=0)
-        plt.close()
+        plt.close("all")
         buf.seek(0)
-        return base64.b64encode(buf.getvalue()).decode("utf-8")
-    except Exception:
-        plt.close()
+        data = buf.getvalue()
+        if not data:
+            return None
+        return base64.b64encode(data).decode("utf-8")
+    except Exception as exc:
+        print(f"[WORDCLOUD ERROR] {exc}")
+        try:
+            plt.close("all")
+        except Exception:
+            pass
         return None
 
 
