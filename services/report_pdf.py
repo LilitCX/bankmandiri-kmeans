@@ -75,9 +75,9 @@ _CSS = """
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif;
        font-size: 11pt; color: #1E293B; background: #fff; }
-.kop { display: flex; align-items: center; gap: 20px;
-       padding: 18px 32px 14px; border-bottom: 3px solid #1D4ED8; margin-bottom: 0; }
-.kop img { width: 72px; height: auto; }
+.kop { display: flex; align-items: center; gap: 16px;
+       padding: 14px 32px 12px; border-bottom: 3px solid #1D4ED8; margin-bottom: 0; }
+.kop img { width: 56px; max-width: 56px; height: auto; flex-shrink: 0; }
 .kop-text h1 { font-size: 22pt; font-weight: 800; color: #1D4ED8;
                letter-spacing: 1px; text-transform: uppercase; margin-bottom: 3px; }
 .kop-text p  { font-size: 9pt; color: #475569; margin: 0; }

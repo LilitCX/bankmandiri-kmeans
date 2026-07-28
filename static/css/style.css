@@ -1057,10 +1057,12 @@ hr { border-color: var(--nb-black); opacity: 1; border-width: 2px; }
   border-bottom: 3px solid var(--nb-navy);
 }
 .laporan-kop-logo {
-  width: 72px;
+  width: 64px;
+  max-width: 64px;
+  max-height: 64px;
   height: auto;
-  flex-shrink: 0;
   object-fit: contain;
+  flex-shrink: 0;
 }
 .laporan-kop-text h2 {
   font-size: 18px;
