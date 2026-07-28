@@ -24,15 +24,18 @@
 
 <div class="laporan-container">
 
-  {# ── Header ── #}
-  <div class="laporan-header">
-    <div class="laporan-header-icon">
-      <i class="fa-solid fa-table-list"></i>
+  {# ── Kop Surat ── #}
+  <div class="laporan-kop">
+    <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo Perusahaan" class="laporan-kop-logo">
+    <div class="laporan-kop-text">
+      <h2>PT Bank Mandiri (Persero) Tbk</h2>
+      <p>Senayan City, Lantai LGF, No. 07B, Jl. Asia Afrika Lot.19, Gelora, Tanah Abang, Jakarta Pusat</p>
+      <p>www.bankmandiri.co.id</p>
     </div>
-    <div class="laporan-header-text">
-      <h2>Laporan Hasil Clustering</h2>
-      <p>Pengelompokan Opini Publik TikTok Bank Mandiri &mdash; K-Means Clustering</p>
-    </div>
+  </div>
+  <div class="laporan-report-title">
+    <h3><i class="fa-solid fa-table-list me-2"></i>Laporan Hasil Clustering</h3>
+    <p>Pengelompokan Opini Publik TikTok Bank Mandiri &mdash; K-Means Clustering</p>
   </div>
 
   {% if state.metrics %}

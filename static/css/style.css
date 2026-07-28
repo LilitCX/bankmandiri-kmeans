@@ -993,6 +993,59 @@ hr { border-color: var(--nb-black); opacity: 1; border-width: 2px; }
   color: #475569;
   margin: 0;
 }
+
+/* Kop surat dengan logo — tampil di layar & saat print browser */
+.laporan-kop {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 18px 0 16px;
+  margin-bottom: 0;
+  border-bottom: 3px solid var(--nb-navy);
+}
+.laporan-kop-logo {
+  width: 72px;
+  height: auto;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+.laporan-kop-text h2 {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--nb-navy);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0 0 3px;
+}
+.laporan-kop-text p {
+  font-size: 11px;
+  color: #475569;
+  margin: 0;
+}
+.laporan-kop-divider {
+  border: none;
+  border-top: 1px solid #CBD5E1;
+  margin: 0 0 20px;
+}
+.laporan-report-title {
+  text-align: center;
+  padding: 16px 0 18px;
+  border-bottom: 1px solid #E2E8F0;
+  margin-bottom: 24px;
+}
+.laporan-report-title h3 {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--nb-navy);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin: 0 0 4px;
+}
+.laporan-report-title p {
+  font-size: 12px;
+  color: #475569;
+  margin: 0;
+}
 .laporan-meta {
   background: #F8FAFC;
   border: 2px solid #E2E8F0;
