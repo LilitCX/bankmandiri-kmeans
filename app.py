@@ -41,12 +41,21 @@ app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 app.config["SCRAPING_FOLDER"] = SCRAPING_FOLDER
 app.config["MAX_CONTENT_LENGTH"] = 32 * 1024 * 1024  # 32 MB upload limit
 
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-os.makedirs(SCRAPING_FOLDER, exist_ok=True)
-os.makedirs(RESULTS_FOLDER, exist_ok=True)
+# Buat folder hanya jika tidak di environment serverless (Vercel)
+if not os.environ.get("VERCEL"):
+    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+    os.makedirs(SCRAPING_FOLDER, exist_ok=True)
+    os.makedirs(RESULTS_FOLDER, exist_ok=True)
 
-# Preprocessor singleton — heavy init (Sastrawi) hanya sekali
-_PREPROCESSOR = TextPreprocessor()
+# Preprocessor singleton — lazy init untuk menghindari timeout di Vercel
+_PREPROCESSOR = None
+
+def get_preprocessor():
+    """Lazy loading: init Sastrawi hanya saat pertama kali dipanggil."""
+    global _PREPROCESSOR
+    if _PREPROCESSOR is None:
+        _PREPROCESSOR = TextPreprocessor()
+    return _PREPROCESSOR
 
 
 # ── Template context: tanggal Indonesia ──────────────────────────────────────
@@ -236,7 +245,7 @@ def preprocessing():
         df = df[df[text_col].str.split().str.len() >= 3].copy()
         jumlah_setelah_filter_raw   = len(df)
 
-        df["komentar_bersih"] = df[text_col].apply(_PREPROCESSOR.preprocess)
+        df["komentar_bersih"] = df[text_col].apply(get_preprocessor().preprocess)
         df = df[df["komentar_bersih"].str.strip() != ""].reset_index(drop=True)
         jumlah_setelah_clean        = len(df)
 

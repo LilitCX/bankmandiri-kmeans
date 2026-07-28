@@ -29,19 +29,20 @@ kiwisolver==1.4.9
 pyparsing==3.2.5
 
 # ── PDF Export ────────────────────────────────────────────────────────────────
-# WeasyPrint (memerlukan GTK runtime di Windows — https://doc.courtbouillon.org/weasyprint/stable/first_steps.html)
-weasyprint==63.1
-pydyf==0.12.1
-tinycss2==1.5.1
-tinyhtml5==2.1.0
-cssselect2==0.9.0
-Pyphen==0.17.2
-webencodings==0.5.1
-cffi==2.1.0
-pycparser==3.0
-zopfli==0.4.3
-brotli==1.2.0
-# xhtml2pdf sebagai fallback PDF (tidak butuh GTK, berjalan di semua platform)
+# WeasyPrint TIDAK kompatibel dengan Vercel (butuh GTK native) — di-comment
+# weasyprint==63.1
+# pydyf==0.12.1
+# tinycss2==1.5.1
+# tinyhtml5==2.1.0
+# cssselect2==0.9.0
+# Pyphen==0.17.2
+# webencodings==0.5.1
+# cffi==2.1.0
+# pycparser==3.0
+# zopfli==0.4.3
+# brotli==1.2.0
+
+# xhtml2pdf sebagai PDF backend (tidak butuh GTK, jalan di semua platform)
 xhtml2pdf==0.2.17
 reportlab==4.5.1
 html5lib==1.1

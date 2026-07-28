@@ -2,7 +2,7 @@
   "version": 2,
   "builds": [
     {
-      "src": "app.py",
+      "src": "api/index.py",
       "use": "@vercel/python",
       "config": {
         "maxLambdaSize": "50mb"
@@ -11,15 +11,12 @@
   ],
   "routes": [
     {
-      "src": "/static/(.*)",
-      "dest": "/static/$1"
-    },
-    {
       "src": "/(.*)",
-      "dest": "/app.py"
+      "dest": "api/index.py"
     }
   ],
   "env": {
-    "FLASK_DEBUG": "0"
+    "FLASK_DEBUG": "0",
+    "VERCEL": "1"
   }
 }
