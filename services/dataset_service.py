@@ -194,6 +194,7 @@ def apply_metadata(metadata: dict, result_dir: str) -> None:
             "jumlah_komponen_lsa": int(metadata.get("lsa_shape", [0, 0])[1]),
             "variansi_lsa": metadata.get("variansi_lsa"),
             "silhouette_score": metadata.get("silhouette"),
+            "davies_bouldin_score": metadata.get("davies_bouldin"),
         },
         "cluster_summary": summary,
         "cluster_quality": metadata.get("cluster_quality", []),
