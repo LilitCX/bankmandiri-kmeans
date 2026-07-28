@@ -154,8 +154,10 @@ def apply_metadata(metadata: dict, result_dir: str) -> None:
     for item in summary:
         cid = int(item["cluster"])
         top_words[cid] = item.get("top_words", [])
+        # Prioritas 1: load dari file PNG di disk
         wordclouds[cid] = _load_wordcloud_from_disk(result_dir, wc_files.get(str(cid)))
 
+    # Prioritas 2: generate dari komentar_bersih di result_df (bisa dari preview 100 baris)
     if result_df is not None and not result_df.empty and "komentar_bersih" in result_df.columns:
         valid_df = result_df.dropna(subset=["cluster"])
         for cid in sorted(valid_df["cluster"].astype(int).unique()):
@@ -167,6 +169,16 @@ def apply_metadata(metadata: dict, result_dir: str) -> None:
                 )
                 wordclouds[cid] = make_wordcloud_b64(text)
             top_words.setdefault(cid, [])
+
+    # Prioritas 3: generate dari top_words jika kedua cara di atas gagal
+    for cid, words in top_words.items():
+        if (cid not in wordclouds or wordclouds[cid] is None) and words:
+            # Ulangi kata berdasarkan posisi untuk beri bobot (kata pertama lebih besar)
+            weighted = " ".join(
+                word for i, word in enumerate(words)
+                for _ in range(max(1, len(words) - i))
+            )
+            wordclouds[cid] = make_wordcloud_b64(weighted)
 
     STATE.update({
         "result_df": result_df,
