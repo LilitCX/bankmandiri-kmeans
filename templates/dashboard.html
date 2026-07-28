@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="page-header">
+  <h1><i class="fa-solid fa-gauge-high me-2"></i>Dashboard</h1>
+  <p>Pengelompokan Opini Publik TikTok Bank Mandiri — TF-IDF &bull; LSA/SVD &bull; K-Means</p>
+</div>
+
+{% set colors = ['#2563EB','#F97316','#22C55E','#8B5CF6','#EF4444','#EC4899','#14B8A6','#6366F1','#FFE44D','#64748B'] %}
+{% set dark_text = [False, False, False, False, False, False, False, False, True, False] %}
+
+<!-- Status cards -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="metric-card accent-blue">
+      <p><i class="fa-solid fa-database me-1"></i>Dataset</p>
+      <h3>{{ "Ada" if state.raw_df is not none else "Belum" }}</h3>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="metric-card accent-orange">
+      <p><i class="fa-solid fa-filter me-1"></i>Preprocessing</p>
+      <h3>{{ "Selesai" if state.processed_df is not none else "Belum" }}</h3>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="metric-card accent-green">
+      <p><i class="fa-solid fa-circle-nodes me-1"></i>Clustering</p>
+      <h3>{{ "Selesai" if state.result_df is not none else "Belum" }}</h3>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="metric-card accent-yellow">
+      <p><i class="fa-solid fa-layer-group me-1"></i>Jumlah Cluster</p>
+      <h3>{{ state.k }}</h3>
+    </div>
+  </div>
+</div>
+
+{% if state.metrics %}
+<!-- Model metrics -->
+<div class="row g-3 mb-4">
+  {% set m = state.metrics %}
+  {% for label, val, acc in [
+    ('Total Data Valid', m.total_data, 'accent-blue'),
+    ('Fitur TF-IDF', m.jumlah_fitur_tfidf, 'accent-orange'),
+    ('Komponen LSA', m.jumlah_komponen_lsa, 'accent-purple'),
+    ('Variansi LSA', m.variansi_lsa, 'accent-green'),
+    ('Silhouette Score', m.silhouette_score, 'accent-green'),
+    ('Davies-Bouldin', m.davies_bouldin_score, 'accent-red'),
+    ('K Terbaik (Sil.)', state.best_k.silhouette.k if state.best_k else '-', 'accent-yellow'),
+    ('K Terpilih', state.k, 'accent-purple'),
+  ] %}
+  <div class="col-6 col-lg-3">
+    <div class="metric-card {{ acc }}">
+      <p>{{ label }}</p>
+      <h3>{{ val }}</h3>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if state.cluster_summary %}
+<div class="row g-4 mb-4">
+  <!-- Topic table -->
+  <div class="col-lg-8">
+    <div class="custom-card h-100">
+      <div class="card-body">
+        <h5 class="chart-title"><i class="fa-solid fa-list-check me-2"></i>Ikhtisar Topik Opini</h5>
+        <p style="color:#4B5563;font-size:13px;margin-bottom:16px;">
+          Ringkasan aspek ulasan yang diidentifikasi oleh sistem.
+        </p>
+        <div class="table-responsive">
+          <table class="table table-bordered table-hover mb-0">
+            <thead>
+              <tr>
+                <th>Klaster</th>
+                <th>Topik Layanan</th>
+                <th class="text-center">Jumlah</th>
+                <th class="text-center">%</th>
+                <th>Kata Kunci</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in state.cluster_summary %}
+              <tr>
+                <td class="text-center">
+                  <span class="badge" style="background:{{ colors[item.cluster % 10] }};
+                    color:{{ '#1A1A1A' if dark_text[item.cluster % 10] else '#FFFFFF' }};
+                    border:2px solid #1A1A1A;font-size:12px;padding:4px 10px;">
+                    C{{ item.cluster }}
+                  </span>
+                </td>
+                <td><strong>{{ item.label }}</strong></td>
+                <td class="text-center font-monospace">{{ item.jumlah }}</td>
+                <td class="text-center font-monospace">{{ item.persen }}%</td>
+                <td>
+                  <div class="d-flex flex-wrap gap-1">
+                    {% for word in item.top_words[:5] %}
+                    <span class="nb-tag">{{ word }}</span>
+                    {% endfor %}
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Doughnut -->
+  <div class="col-lg-4">
+    <div class="custom-card h-100">
+      <div class="card-body">
+        <h5 class="chart-title"><i class="fa-solid fa-chart-pie me-2"></i>Proporsi Opini</h5>
+        <div class="chart-wrapper chart-wrapper-sm d-flex align-items-center justify-content-center">
+          <canvas id="dashboardPieChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Pipeline flow -->
+<div class="custom-card">
+  <div class="card-body">
+    <h5 class="chart-title"><i class="fa-solid fa-diagram-project me-2"></i>Alur Sistem</h5>
+    <div class="flow-box mt-2">
+      Dataset CSV &rarr; Preprocessing (Sastrawi + Normalisasi)
+      &rarr; TF-IDF Vectorization &rarr; SVD/LSA Reduction
+      &rarr; K-Means Clustering &rarr; Visualisasi &amp; Evaluasi
+      &rarr; Export CSV &amp; Laporan PDF
+    </div>
+  </div>
+</div>
+
+{% if state.cluster_summary %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const labels = [], data = [];
+  const colors = ["#2563EB","#F97316","#22C55E","#8B5CF6","#EF4444","#EC4899","#14B8A6","#6366F1","#FFE44D","#64748B"];
+  {% for item in state.cluster_summary %}
+  labels.push("C{{ item.cluster }} – {{ item.label | truncate(20, true, '…') }}");
+  data.push({{ item.jumlah }});
+  {% endfor %}
+  new Chart(document.getElementById("dashboardPieChart"), {
+    type: "doughnut",
+    data: { labels, datasets: [{ data, backgroundColor: colors.slice(0, data.length), borderColor: "#1A1A1A", borderWidth: 2, hoverOffset: 5 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: "bottom", labels: { boxWidth: 13, padding: 10, font: { size: 11, family: 'Space Grotesk' }, color: "#1A1A1A" } }
+      },
+      cutout: "62%"
+    }
+  });
+});
+</script>
+{% endif %}
+{% endblock %}

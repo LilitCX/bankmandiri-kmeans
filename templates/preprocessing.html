@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="page-header">
+  <h1><i class="fa-solid fa-filter me-2"></i>Preprocessing Teks</h1>
+  <p>Normalisasi, tokenisasi, stopword removal, dan stemming Sastrawi sebelum TF-IDF.</p>
+</div>
+
+<div class="row g-4 mb-4">
+  <div class="col-lg-7">
+    <div class="custom-card">
+      <div class="card-body">
+        <h5 class="chart-title mb-1">Pilih Kolom Komentar</h5>
+        <p style="color:#4B5563;font-size:13px;margin-bottom:20px;">
+          Pilih kolom yang berisi teks komentar mentah.
+        </p>
+        <form method="POST">
+          <div class="row g-3 align-items-end">
+            <div class="col-md-8">
+              <label class="form-label">Kolom Komentar</label>
+              <select name="text_column" class="form-select" required>
+                {% for col in state.columns %}
+                <option value="{{ col }}" {{ 'selected' if state.text_column == col }}>{{ col }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-4">
+              <button class="btn btn-primary w-100">
+                <i class="fa-solid fa-play me-1"></i>Proses
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    <div class="custom-card h-100" style="border-top:5px solid var(--nb-yellow);">
+      <div class="card-body">
+        <h5 style="font-weight:700;margin-bottom:12px;">
+          <i class="fa-solid fa-list-ol me-2" style="color:var(--nb-blue);"></i>Tahapan Preprocessing
+        </h5>
+        <ol style="font-size:13px;color:#374151;line-height:2.1;padding-left:18px;margin:0;">
+          <li>Normalisasi slang &amp; frasa majemuk</li>
+          <li>Hapus URL, mention, hashtag, angka</li>
+          <li>Hapus karakter non-ASCII &amp; tanda baca</li>
+          <li>Normalisasi kamus singkatan (400+ kata)</li>
+          <li>Penggabungan frasa negasi</li>
+          <li>Hapus stopwords (Sastrawi + custom)</li>
+          <li>Stemming Bahasa Indonesia (Sastrawi)</li>
+          <li>Hapus teks kosong &amp; duplikat</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if state.preprocessing_stats %}
+<div class="row g-3 mb-4">
+  {% for label, val, acc in [
+    ('Data Awal',       state.preprocessing_stats.jumlah_data_awal,          'accent-blue'),
+    ('Tidak Null',      state.preprocessing_stats.jumlah_tidak_null,         'accent-orange'),
+    ('Lolos Filter',    state.preprocessing_stats.jumlah_setelah_filter_raw, 'accent-purple'),
+    ('Duplikat Hapus',  state.preprocessing_stats.jumlah_duplikat_dihapus,   'accent-red'),
+    ('Data Valid',      state.preprocessing_stats.jumlah_data_valid,         'accent-green'),
+  ] %}
+  <div class="col-6 col-md">
+    <div class="metric-card {{ acc }} text-center">
+      <p>{{ label }}</p>
+      <h3>{{ val }}</h3>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if preview %}
+<div class="custom-card">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+      <div>
+        <h5 class="chart-title mb-1">Hasil Preprocessing</h5>
+        <p style="color:#4B5563;font-size:13px;margin:0;">30 baris pertama — komentar asli vs token bersih.</p>
+      </div>
+      <a href="{{ url_for('clustering') }}" class="btn btn-success">
+        <i class="fa-solid fa-circle-nodes me-1"></i>Lanjut Clustering
+      </a>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-bordered table-hover mb-0">
+        <thead>
+          <tr>
+            {% for col in preview[0].keys() %}
+            <th>{{ 'Token Bersih' if col == 'komentar_bersih' else col | capitalize }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in preview %}
+          <tr>
+            {% for key, val in row.items() %}
+            <td {% if key == 'komentar_bersih' %}class="font-monospace" style="color:#1D4ED8;font-size:13px;"{% endif %}>
+              {{ val }}
+            </td>
+            {% endfor %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

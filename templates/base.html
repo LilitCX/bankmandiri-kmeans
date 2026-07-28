@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard K-Means — Bank Mandiri</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#1A1A1A">
+  <meta name="description" content="Dashboard Pengelompokan Opini Publik TikTok Bank Mandiri — K-Means Clustering">
+  <link rel="icon" href="{{ url_for('static', filename='app.png') }}" type="image/png">
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<!-- ── Loading overlay ──────────────────────────────── -->
+<div id="loading-overlay">
+  <div class="loading-card">
+    <div class="loading-spinner"></div>
+    <p class="loading-text">Sedang memproses clustering…</p>
+  </div>
+</div>
+
+<!-- ── Sidebar overlay (mobile tap-to-close) ────────── -->
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+<!-- ── Mobile Topbar ────────────────────────────────── -->
+<header class="topbar" id="topbar">
+  <span class="topbar-brand"><i class="fa-solid fa-chart-pie me-2"></i>K-Means Mandiri</span>
+  <button class="hamburger-btn" id="hamburger-btn" aria-label="Buka menu" aria-expanded="false">
+    <span></span><span></span><span></span>
+  </button>
+</header>
+
+<!-- ── Sidebar ──────────────────────────────────────── -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="sidebar-brand-icon">
+      <i class="fa-solid fa-chart-pie"></i>
+    </div>
+    <h4>K-Means</h4>
+    <p>Bank Mandiri</p>
+  </div>
+
+  <nav class="sidebar-menu">
+    {% set nav_main = [
+      ('dashboard',    'fa-gauge-high',   'Dashboard'),
+      ('dataset',      'fa-database',     'Dataset'),
+      ('scraping',     'fa-spider',       'Scraping'),
+      ('preprocessing','fa-filter',       'Preprocessing'),
+      ('clustering',   'fa-circle-nodes', 'Clustering'),
+    ] %}
+    {% for endpoint, icon, label in nav_main %}
+    <a href="{{ url_for(endpoint) }}"
+       class="{{ 'active' if request.endpoint == endpoint else '' }}">
+      <i class="fa-solid {{ icon }}"></i> {{ label }}
+    </a>
+    {% endfor %}
+
+    {# ── Laporan accordion group ── #}
+    {% set laporan_endpoints = [
+      'laporan_evaluasi', 'laporan_visualisasi', 'laporan_interpretasi', 'laporan_hasil'
+    ] %}
+    {% set laporan_active = request.endpoint in laporan_endpoints %}
+    <div class="sidebar-group-label {{ 'open' if laporan_active else '' }} {{ 'has-active' if laporan_active else '' }}"
+         id="sidebar-laporan-toggle"
+         role="button" tabindex="0" aria-expanded="{{ 'true' if laporan_active else 'false' }}">
+      <span class="sidebar-group-left">
+        <i class="fa-solid fa-file-lines"></i> Laporan
+      </span>
+      <i class="fa-solid fa-chevron-down sidebar-group-chevron"></i>
+    </div>
+    <div class="sidebar-sub-menu {{ 'open' if laporan_active else '' }}" id="sidebar-laporan-menu">
+      {% set laporan_nav = [
+        ('laporan_evaluasi',    'fa-star-half-stroke', 'Lap. Evaluasi'),
+        ('laporan_visualisasi', 'fa-chart-line',    'Lap. Visualisasi'),
+        ('laporan_interpretasi','fa-lightbulb',        'Lap. Interpretasi'),
+        ('laporan_hasil',       'fa-table-list',       'Lap. Hasil'),
+      ] %}
+      {% for endpoint, icon, label in laporan_nav %}
+      <a href="{{ url_for(endpoint) }}"
+         class="{{ 'active' if request.endpoint == endpoint else '' }}">
+        <i class="fa-solid {{ icon }}"></i> {{ label }}
+      </a>
+      {% endfor %}
+    </div>
+
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="sidebar-user">
+      <div class="sidebar-user-avatar">
+        <i class="fa-solid fa-user"></i>
+      </div>
+      <div class="sidebar-user-info">
+        <span class="sidebar-user-name">
+          {{ username if username is defined else session.get('username', 'User') }}
+        </span>
+        <span class="sidebar-user-role">Peneliti</span>
+      </div>
+    </div>
+    <a href="{{ url_for('logout') }}" class="btn-logout">
+      <i class="fa-solid fa-right-from-bracket"></i> Logout
+    </a>
+  </div>
+</aside>
+
+<!-- ── Main content ─────────────────────────────────── -->
+<main class="main-content">
+
+  {% if state.message %}
+  <div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
+    <i class="fa-solid fa-circle-check me-2"></i>{{ state.message }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Tutup"></button>
+  </div>
+  {% endif %}
+
+  {% if state.error %}
+  <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+    <i class="fa-solid fa-triangle-exclamation me-2"></i>{{ state.error }}
+    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Tutup"></button>
+  </div>
+  {% endif %}
+
+  {% block content %}{% endblock %}
+</main>
+
+<!-- ── Mobile Bottom Navbar ─────────────────────────── -->
+<nav class="bottom-nav" id="bottom-nav" aria-label="Menu bawah">
+  {% set laporan_endpoints = ['laporan_evaluasi','laporan_visualisasi','laporan_interpretasi','laporan_hasil'] %}
+  {% set bottom_nav = [
+    ('dashboard',          'fa-gauge-high',      'Home'),
+    ('dataset',            'fa-database',        'Data'),
+    ('clustering',         'fa-circle-nodes',    'Cluster'),
+    ('laporan_evaluasi',   'fa-file-lines',      'Laporan'),
+    ('hasil',              'fa-table-list',      'Hasil'),
+  ] %}
+  {% for endpoint, icon, label in bottom_nav %}
+  <a href="{{ url_for(endpoint) }}"
+     class="bottom-nav-item {{ 'active' if (request.endpoint == endpoint or (label == 'Laporan' and request.endpoint in laporan_endpoints)) else '' }}">
+    <i class="fa-solid {{ icon }}"></i>
+    <span>{{ label }}</span>
+  </a>
+  {% endfor %}
+</nav>
+
+<!-- ── Scripts ──────────────────────────────────────── -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  /* Auto-dismiss alerts */
+  document.querySelectorAll('.alert.alert-dismissible').forEach(el => {
+    setTimeout(() => {
+      try { bootstrap.Alert.getOrCreateInstance(el).close(); } catch (_) {}
+    }, 6000);
+  });
+
+  /* Hamburger / sidebar toggle */
+  const hamburgerBtn = document.getElementById('hamburger-btn');
+  const sidebar      = document.getElementById('sidebar');
+  const overlay      = document.getElementById('sidebar-overlay');
+
+  function openSidebar() {
+    sidebar.classList.add('open');
+    overlay.classList.add('active');
+    hamburgerBtn.classList.add('open');
+    hamburgerBtn.setAttribute('aria-expanded', 'true');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeSidebar() {
+    sidebar.classList.remove('open');
+    overlay.classList.remove('active');
+    hamburgerBtn.classList.remove('open');
+    hamburgerBtn.setAttribute('aria-expanded', 'false');
+    document.body.style.overflow = '';
+  }
+
+  if (hamburgerBtn) {
+    hamburgerBtn.addEventListener('click', () => {
+      sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
+    });
+  }
+  if (overlay) overlay.addEventListener('click', closeSidebar);
+
+  /* Close sidebar on nav link click (mobile) */
+  document.querySelectorAll('.sidebar-menu a, .sidebar-sub-menu a').forEach(link => {
+    link.addEventListener('click', () => {
+      if (window.innerWidth <= 768) closeSidebar();
+    });
+  });
+
+  /* Resize: close sidebar if resized to desktop */
+  window.addEventListener('resize', () => {
+    if (window.innerWidth > 768) closeSidebar();
+  });
+
+  /* ── Laporan accordion ── */
+  (function () {
+    const toggle = document.getElementById('sidebar-laporan-toggle');
+    const menu   = document.getElementById('sidebar-laporan-menu');
+    if (!toggle || !menu) return;
+
+    toggle.addEventListener('click', function () {
+      const isOpen = menu.classList.contains('open');
+      menu.classList.toggle('open', !isOpen);
+      toggle.classList.toggle('open', !isOpen);
+      toggle.setAttribute('aria-expanded', String(!isOpen));
+    });
+
+    /* Keyboard support (Enter / Space) */
+    toggle.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        toggle.click();
+      }
+    });
+  }());
+}());
+</script>
+</body>
+</html>

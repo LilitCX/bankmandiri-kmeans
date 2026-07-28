@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="page-header">
+  <h1><i class="fa-solid fa-chart-scatter me-2"></i>Visualisasi</h1>
+  <p>Distribusi cluster, scatter plot t-SNE, dan wordcloud per cluster.</p>
+</div>
+
+<div class="row g-4 mb-4">
+  <!-- Bar chart -->
+  <div class="col-lg-6">
+    <div class="custom-card h-100">
+      <div class="card-body">
+        <div class="chart-header">
+          <h5 class="chart-title">Distribusi per Cluster</h5>
+          <button class="btn-download-chart" onclick="downloadChart('clusterBarChart','distribusi_cluster.png')">
+            <i class="fa-solid fa-download"></i> PNG
+          </button>
+        </div>
+        <div class="chart-wrapper"><canvas id="clusterBarChart"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scatter plot -->
+  <div class="col-lg-6">
+    <div class="custom-card h-100">
+      <div class="card-body">
+        <div class="chart-header">
+          <div>
+            <h5 class="chart-title">Scatter Plot K-Means</h5>
+            <p class="chart-subtitle">Proyeksi t-SNE 2D — sebaran antar cluster.</p>
+          </div>
+          <button class="btn-download-chart" onclick="downloadChart('scatterChart','scatter_kmeans.png')">
+            <i class="fa-solid fa-download"></i> PNG
+          </button>
+        </div>
+        <div class="chart-wrapper"><canvas id="scatterChart"></canvas></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Wordclouds -->
+<div class="custom-card">
+  <div class="card-body">
+    <h5 class="chart-title"><i class="fa-solid fa-cloud-word me-2"></i>Wordcloud per Cluster</h5>
+    <div class="row g-4 mt-1">
+      {% for cluster_id, img in state.wordclouds.items() %}
+      <div class="col-lg-6">
+        <div class="wordcloud-card">
+          <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+            <h6 style="font-weight:700;margin:0;color:var(--nb-black);">
+              {% for item in state.cluster_summary %}
+                {% if item.cluster == cluster_id %}C{{ cluster_id }} — {{ item.label }}{% endif %}
+              {% endfor %}
+            </h6>
+            {% if img %}
+            <a href="data:image/png;base64,{{ img }}" download="wordcloud_cluster_{{ cluster_id }}.png"
+               class="btn-download-chart">
+              <i class="fa-solid fa-download"></i> Download
+            </a>
+            {% endif %}
+          </div>
+          {% if img %}
+          <img src="data:image/png;base64,{{ img }}" class="img-fluid w-100"
+               style="border:var(--nb-border);border-radius:8px;" alt="Wordcloud C{{ cluster_id }}">
+          {% else %}
+          <div style="padding:24px;background:#F3F4F6;border:var(--nb-border);border-radius:8px;text-align:center;color:#6B7280;">
+            <i class="fa-solid fa-image-slash fa-2x mb-2"></i><br>
+            Tidak ada kata cukup untuk wordcloud.
+          </div>
+          {% endif %}
+          {% if state.top_words[cluster_id] %}
+          <div class="mt-3">
+            <p style="font-size:11px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Top Words</p>
+            <div class="d-flex flex-wrap gap-1">
+              {% for word in state.top_words[cluster_id] %}
+              <span class="nb-tag">{{ word }}</span>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<script id="viz-data" type="application/json">
+{"bar_labels":{{ state.bar_labels|tojson }},"bar_values":{{ state.bar_values|tojson }},
+ "scatter_data":{{ state.scatter_data|tojson }},"cluster_summary":{{ state.cluster_summary|tojson }}}
+</script>
+<script>
+const vd = JSON.parse(document.getElementById('viz-data').textContent);
+const CC = ["#2563EB","#F97316","#22C55E","#8B5CF6","#EF4444","#EC4899","#14B8A6","#6366F1","#FFE44D","#64748B"];
+const labelMap = {};
+vd.cluster_summary.forEach(i => { labelMap[i.cluster] = i.label; });
+
+// Bar
+new Chart(document.getElementById('clusterBarChart'), {
+  type:'bar',
+  data:{ labels:vd.bar_labels, datasets:[{ label:'Jumlah', data:vd.bar_values,
+    backgroundColor: vd.bar_labels.map((_,i)=>CC[i%CC.length]),
+    borderColor:'#1A1A1A', borderWidth:2, borderRadius:8, borderSkipped:false }]},
+  options:{ responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{display:false} },
+    scales:{ x:{ grid:{display:false}, ticks:{color:'#1A1A1A',font:{weight:'700',size:14}} },
+             y:{ beginAtZero:true, grid:{color:'#E5E7EB'}, ticks:{color:'#374151'} } } }
+});
+
+// Scatter
+const grouped = {};
+vd.scatter_data.forEach(p => {
+  if (!grouped[p.cluster]) grouped[p.cluster]=[];
+  grouped[p.cluster].push({x:p.x, y:p.y, komentar:p.komentar});
+});
+new Chart(document.getElementById('scatterChart'), {
+  type:'scatter',
+  data:{ datasets: Object.keys(grouped).map((cId,idx) => ({
+    label:'C'+cId+' — '+(labelMap[parseInt(cId)]||('Cluster '+cId)),
+    data:grouped[cId],
+    backgroundColor:CC[idx%CC.length]+'BB', borderColor:CC[idx%CC.length],
+    borderWidth:1.5, pointRadius:4, pointHoverRadius:6
+  })) },
+  options:{ responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{ position:'bottom', labels:{ usePointStyle:true, pointStyleWidth:10,
+      color:'#1A1A1A', font:{size:12,family:'Space Grotesk'}, padding:14 } },
+      tooltip:{ callbacks:{ label: c => [c.dataset.label,'Komentar: '+(c.raw.komentar||'')] } } },
+    scales:{ x:{ title:{display:true,text:'t-SNE Dim 1',color:'#4B5563',font:{weight:'700'}},
+                 grid:{color:'#E5E7EB'}, ticks:{color:'#374151'} },
+             y:{ title:{display:true,text:'t-SNE Dim 2',color:'#4B5563',font:{weight:'700'}},
+                 grid:{color:'#E5E7EB'}, ticks:{color:'#374151'} } } }
+});
+
+function downloadChart(id, name) {
+  const a = document.createElement('a'); a.download=name;
+  a.href = document.getElementById(id).toDataURL('image/png'); a.click();
+}
+</script>
+{% endblock %}

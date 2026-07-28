@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Dataset</h1>
+    <p>Upload file CSV komentar TikTok Bank Mandiri.</p>
+</div>
+
+<div class="card custom-card mb-4">
+    <div class="card-body">
+        <h4 class="mb-3">Upload CSV</h4>
+
+        <form method="POST" enctype="multipart/form-data">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-8">
+                    <label class="form-label">File CSV</label>
+                    <input type="file" name="csv_file" class="form-control" accept=".csv" required>
+                </div>
+
+                <div class="col-md-4">
+                    <button class="btn btn-primary w-100">Upload Dataset</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if raw_preview %}
+<div class="card custom-card">
+    <div class="card-body">
+        <h4>Preview Data Mentah</h4>
+        <p class="text-muted">Menampilkan 20 data pertama.</p>
+
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover">
+                <thead class="table-light">
+                    <tr>
+                        {% for col in raw_preview[0].keys() %}
+                        <th>{{ col }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for row in raw_preview %}
+                    <tr>
+                        {% for value in row.values() %}
+                        <td>{{ value }}</td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <a href="{{ url_for('preprocessing') }}" class="btn btn-success mt-3">Lanjut ke Preprocessing</a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

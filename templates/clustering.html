@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="page-header">
+  <h1><i class="fa-solid fa-circle-nodes me-2"></i>Clustering K-Means</h1>
+  <p>TF-IDF Vectorization &rarr; SVD/LSA Reduction &rarr; K-Means Clustering</p>
+</div>
+
+{% set ds_done = state.raw_df is not none %}
+{% set pp_done = state.processed_df is not none %}
+{% set cl_done = state.result_df is not none %}
+
+<!-- Pipeline steps -->
+<div class="pipeline-steps mb-4">
+  {% for done_flag, active_flag, label in [
+    (ds_done,                     False,   'Dataset'),
+    (pp_done,                     ds_done and not pp_done, 'Preprocessing'),
+    (cl_done,                     pp_done and not cl_done, 'Clustering'),
+    (cl_done,                     False,   'Hasil'),
+  ] %}
+  <div class="step-item">
+    <div class="step-badge {{ 'done' if done_flag else 'active' if active_flag else '' }}">
+      {% if done_flag %}<i class="fa-solid fa-check"></i>
+      {% else %}{{ loop.index }}{% endif %}
+    </div>
+    <span class="step-label {{ 'done' if done_flag else 'active' if active_flag else '' }}">{{ label }}</span>
+  </div>
+  {% if not loop.last %}
+  <div class="step-connector {{ 'done' if done_flag else '' }}"></div>
+  {% endif %}
+  {% endfor %}
+</div>
+
+<div class="row g-4">
+  <!-- Config form -->
+  <div class="col-lg-6">
+    <div class="custom-card">
+      <div class="card-body">
+        <h5 class="chart-title mb-1">Konfigurasi K-Means</h5>
+        <p style="color:#4B5563;font-size:13px;margin-bottom:20px;">
+          Data valid: <strong>{{ state.preprocessing_stats.jumlah_data_valid if state.preprocessing_stats else '-' }}</strong> komentar.
+        </p>
+        <form method="POST" id="clustering-form">
+          <div class="mb-4">
+            <label class="form-label">Jumlah Cluster (k)</label>
+            <div class="d-flex flex-wrap gap-2 mt-1" id="k-selector">
+              {% for k in range(2, 11) %}
+              <label class="k-option-label {{ 'k-option-active' if state.k == k else '' }}">
+                <input type="radio" name="jumlah_cluster" value="{{ k }}"
+                       {{ 'checked' if state.k == k }} class="d-none k-radio">{{ k }}
+              </label>
+              {% endfor %}
+            </div>
+            <small style="color:#4B5563;display:block;margin-top:8px;font-size:13px;">
+              Rekomendasi: 4–6 cluster untuk komentar media sosial.
+            </small>
+          </div>
+          <button type="submit" class="btn btn-primary" id="btn-cluster" style="min-width:200px;">
+            <i class="fa-solid fa-play me-2"></i>Jalankan Clustering
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pipeline info -->
+  <div class="col-lg-6">
+    <div class="custom-card h-100" style="border-top:5px solid var(--nb-yellow);">
+      <div class="card-body">
+        <h5 style="font-weight:700;margin-bottom:16px;">
+          <i class="fa-solid fa-gears me-2" style="color:var(--nb-blue);"></i>Alur Proses Pipeline
+        </h5>
+        <div class="d-flex flex-column gap-3">
+          {% for icon, color, title, desc in [
+            ('fa-table-cells', '#2563EB', 'TF-IDF Vectorization', 'Bobot term-frequency inverse document frequency dengan sublinear TF dan n-gram (1,2).'),
+            ('fa-compress', '#8B5CF6', 'SVD / LSA', 'Reduksi dimensi Truncated SVD untuk menangkap konsep laten, diikuti normalisasi L2.'),
+            ('fa-circle-nodes', '#F97316', 'K-Means Clustering', 'Pengelompokan iteratif berdasarkan jarak Euclidean di ruang LSA. Seed topic-aware jika k=5.'),
+            ('fa-scatter-chart', '#22C55E', 't-SNE Proyeksi', 'Proyeksi 2D untuk scatter plot — tidak memengaruhi hasil clustering.'),
+            ('fa-chart-line', '#EF4444', 'Evaluasi', 'Silhouette Score, Davies-Bouldin Index, dan Elbow Method.'),
+          ] %}
+          <div class="d-flex gap-3 align-items-start">
+            <div style="width:34px;height:34px;border-radius:8px;border:2px solid #1A1A1A;
+                        background:{{ color }}22;display:flex;align-items:center;
+                        justify-content:center;flex-shrink:0;box-shadow:2px 2px 0 #1A1A1A;">
+              <i class="fa-solid {{ icon }}" style="color:{{ color }};font-size:14px;"></i>
+            </div>
+            <div>
+              <p style="margin:0 0 2px;font-weight:700;font-size:13px;color:var(--nb-black);">{{ title }}</p>
+              <p style="margin:0;color:#4B5563;font-size:12px;line-height:1.5;">{{ desc }}</p>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.querySelectorAll('.k-radio').forEach(r => {
+  r.addEventListener('change', () => {
+    document.querySelectorAll('.k-option-label').forEach(l => l.classList.remove('k-option-active'));
+    r.closest('.k-option-label').classList.add('k-option-active');
+  });
+});
+document.getElementById('clustering-form').addEventListener('submit', () => {
+  document.getElementById('loading-overlay').classList.add('active');
+});
+</script>
+{% endblock %}

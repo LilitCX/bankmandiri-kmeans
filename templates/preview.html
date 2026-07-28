@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Preview Dataset{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+  <div>
+    <h4 class="fw-bold mb-1">Preview Dataset</h4>
+    <div class="text-muted">File: {{ filename }} · Total baris: {{ total_rows }}</div>
+  </div>
+  <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">Upload Ulang</a>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-4">
+    <div class="card shadow-sm border-0">
+      <div class="card-body p-4">
+        <h5 class="fw-bold">Pengaturan Clustering</h5>
+        <form action="{{ url_for('process') }}" method="post">
+          <input type="hidden" name="saved_name" value="{{ saved_name }}">
+          <input type="hidden" name="session_id" value="{{ session_id }}">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Kolom komentar</label>
+            <select name="komentar_col" class="form-select" required>
+              {% for col in columns %}
+              <option value="{{ col }}" {% if col == rekomendasi_col %}selected{% endif %}>{{ col }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Jumlah Cluster (K)</label>
+            <input type="number" name="jumlah_cluster" class="form-control" min="2" max="10" value="5" required>
+            <div class="form-text">Untuk pipeline Bank Mandiri, K=5 paling sesuai dengan label topik default.</div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Minimal kata komentar mentah</label>
+            <input type="number" name="min_kata_raw" class="form-control" min="1" max="10" value="3" required>
+          </div>
+          <button class="btn btn-primary w-100" type="submit">Jalankan Preprocessing & K-Means</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-8">
+    <div class="card shadow-sm border-0">
+      <div class="card-body p-4">
+        <h5 class="fw-bold">10 Data Teratas</h5>
+        <div class="table-responsive table-box">
+          <table class="table table-sm table-striped align-middle">
+            <thead>
+              <tr>
+                {% for col in columns %}<th>{{ col }}</th>{% endfor %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in sample %}
+              <tr>
+                {% for col in columns %}<td>{{ row[col] }}</td>{% endfor %}
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

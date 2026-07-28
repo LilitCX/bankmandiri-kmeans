@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="page-header">
+  <h1><i class="fa-solid fa-lightbulb me-2"></i>Interpretasi Cluster</h1>
+  <p>Topik, kualitas, top words, dan sampel komentar representatif per cluster.</p>
+</div>
+
+<div class="d-flex justify-content-end mb-4">
+  <a href="{{ url_for('download_laporan') }}" class="btn btn-success" target="_blank">
+    <i class="fa-solid fa-file-pdf me-1"></i>Cetak Laporan PDF
+  </a>
+</div>
+
+{% set colors = ['#2563EB','#F97316','#22C55E','#8B5CF6','#EF4444','#EC4899','#14B8A6','#6366F1','#FFE44D','#64748B'] %}
+{% set dark_text = [False, False, False, False, False, False, False, False, True, False] %}
+{% set bg_colors = ['#DBEAFE','#FFEDD5','#DCFCE7','#F3E8FF','#FEE2E2','#FCE7F3','#CCFBF1','#E0E7FF','#FEF9C3','#F1F5F9'] %}
+
+{% for item in state.cluster_summary %}
+{% set ci = item.cluster % 10 %}
+<div class="custom-card mb-4" style="border-left:5px solid {{ colors[ci] }};">
+  <div class="card-body">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+      <div>
+        <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+          <span class="badge" style="background:{{ colors[ci] }};
+            color:{{ '#1A1A1A' if dark_text[ci] else '#FFFFFF' }};
+            border:2px solid #1A1A1A;font-size:13px;padding:5px 12px;">C{{ item.cluster }}</span>
+          <h5 style="margin:0;font-weight:700;color:var(--nb-black);font-size:16px;">{{ item.label }}</h5>
+        </div>
+        <p style="color:#4B5563;font-size:13px;margin:0;">
+          <strong>{{ item.jumlah }}</strong> komentar &bull; <strong>{{ item.persen }}%</strong> dari total data
+        </p>
+      </div>
+      <div class="d-flex gap-2 flex-wrap">
+        <span style="background:{{ bg_colors[ci] }};color:var(--nb-black);
+                     border:2px solid {{ colors[ci] }};border-radius:8px;
+                     padding:6px 13px;font-size:12px;font-weight:700;display:inline-block;">
+          Silhouette Rata-rata: <strong>{{ item.silhouette_rata2 }}</strong>
+        </span>
+        <span style="background:#F3F4F6;color:var(--nb-black);
+                     border:2px solid #1A1A1A;border-radius:8px;
+                     padding:6px 13px;font-size:12px;font-weight:700;display:inline-block;">
+          Min: {{ item.silhouette_min }} &bull; Max: {{ item.silhouette_max }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Top Words -->
+    <div class="mb-4">
+      <p style="font-size:11px;font-weight:700;color:#6B7280;text-transform:uppercase;
+                letter-spacing:.6px;margin-bottom:8px;">Kata Kunci Representatif (TF-IDF Centroid)</p>
+      <div class="d-flex flex-wrap gap-1">
+        {% for word in item.top_words %}
+        <span class="nb-tag">{{ word }}</span>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Sample table -->
+    <div>
+      <p style="font-size:11px;font-weight:700;color:#6B7280;text-transform:uppercase;
+                letter-spacing:.6px;margin-bottom:8px;">Sampel Komentar Tertinggi (Silhouette)</p>
+      <div class="table-responsive">
+        <table class="table table-bordered table-hover mb-0">
+          <thead>
+            <tr>
+              <th style="width:46%;">Komentar Asli</th>
+              <th style="width:42%;">Token Preprocessing</th>
+              <th class="text-center" style="width:12%;">Silhouette</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for sample in item.samples %}
+            <tr>
+              <td style="font-size:13px;">
+                {{ sample[state.text_column] if state.text_column and state.text_column in sample
+                   else sample.get('komentar', '-') }}
+              </td>
+              <td class="font-monospace" style="font-size:12px;color:#1D4ED8;">
+                {{ sample.komentar_bersih }}
+              </td>
+              <td class="text-center font-monospace fw-bold"
+                  style="color:{{ '#15803D' if (sample.silhouette_sample or 0) >= 0 else '#DC2626' }};">
+                {{ sample.silhouette_sample }}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="alert alert-warning">
+  <i class="fa-solid fa-triangle-exclamation me-2"></i>
+  Belum ada data clustering. <a href="{{ url_for('clustering') }}" style="color:var(--nb-black);font-weight:700;">Jalankan clustering terlebih dahulu.</a>
+</div>
+{% endfor %}
+{% endblock %}

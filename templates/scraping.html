@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="page-header">
+  <h1><i class="fa-solid fa-spider me-2"></i>Scraping TikTok</h1>
+  <p>Ambil komentar dari video TikTok secara otomatis menggunakan Chrome.</p>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-8">
+    <div class="custom-card">
+      <div class="card-body">
+        <h5 class="chart-title mb-2">Ambil Komentar dari URL Video</h5>
+
+        <div class="alert alert-info mb-4">
+          <i class="fa-solid fa-circle-info me-2"></i>
+          Setelah dijalankan, Chrome akan terbuka. Jika ada login/captcha, selesaikan secara manual selama waktu tunggu yang ditentukan.
+        </div>
+
+        <form method="POST">
+          <div class="mb-3">
+            <label class="form-label">URL Video TikTok</label>
+            <input type="url" name="tiktok_url" class="form-control"
+                   placeholder="https://www.tiktok.com/@bankmandiri/video/..." required>
+          </div>
+          <div class="row g-3 mb-4">
+            <div class="col-sm-6 col-md-3">
+              <label class="form-label">Waktu Tunggu Manual (detik)</label>
+              <input type="number" name="manual_wait" class="form-control" value="25" min="5" max="180">
+              <small style="color:#4B5563;font-size:12px;">Waktu untuk login/captcha</small>
+            </div>
+            <div class="col-sm-6 col-md-3">
+              <label class="form-label">Maks. Komentar</label>
+              <input type="number" name="max_comments" class="form-control" value="300" min="10" max="2000">
+            </div>
+            <div class="col-sm-6 col-md-3">
+              <label class="form-label">Scroll Kosong Maks.</label>
+              <input type="number" name="max_empty_scroll" class="form-control" value="8" min="3" max="30">
+              <small style="color:#4B5563;font-size:12px;">Berhenti jika panel kosong</small>
+            </div>
+            <div class="col-sm-6 col-md-3">
+              <label class="form-label">Delay Scroll (detik)</label>
+              <input type="number" step="0.5" name="delay" class="form-control" value="2.0" min="0.5" max="8">
+            </div>
+          </div>
+          <div class="d-flex gap-3 flex-wrap">
+            <button class="btn btn-primary">
+              <i class="fa-solid fa-play me-1"></i>Mulai Scraping
+            </button>
+            <a href="{{ url_for('dataset') }}" class="btn btn-outline-secondary">
+              <i class="fa-solid fa-arrow-left me-1"></i>Kembali
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="custom-card h-100" style="border-top:5px solid var(--nb-yellow);">
+      <div class="card-body">
+        <h5 style="font-weight:700;margin-bottom:14px;">
+          <i class="fa-solid fa-circle-question me-2" style="color:var(--nb-blue);"></i>Panduan Scraping
+        </h5>
+        <ol style="font-size:13px;color:#374151;line-height:2.1;padding-left:18px;margin:0;">
+          <li>Masukkan URL video TikTok yang valid</li>
+          <li>Atur waktu tunggu sesuai koneksi</li>
+          <li>Klik <strong>Mulai Scraping</strong></li>
+          <li>Chrome akan terbuka otomatis</li>
+          <li>Selesaikan captcha/login jika diminta</li>
+          <li>Tunggu hingga proses selesai</li>
+          <li>Data otomatis dimuat ke Dataset</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if state.scraping_result %}
+<div class="custom-card mt-4">
+  <div class="card-body">
+    <h5 class="chart-title mb-3">Hasil Scraping Terakhir</h5>
+    <div class="table-responsive">
+      <table class="table table-bordered mb-0">
+        <tbody>
+          <tr>
+            <th style="width:40%;">Total Komentar Diambil</th>
+            <td><strong style="color:var(--nb-green);font-size:18px;">{{ state.scraping_result.total_comments }}</strong></td>
+          </tr>
+          <tr>
+            <th>Target Terdeteksi</th>
+            <td>{{ state.scraping_result.target_comments or '-' }}</td>
+          </tr>
+          <tr>
+            <th>Batas Maksimum</th>
+            <td>{{ state.scraping_result.max_comments }}</td>
+          </tr>
+          <tr>
+            <th>File CSV</th>
+            <td><code>{{ state.scraping_result.csv_path or '-' }}</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

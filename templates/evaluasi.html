@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="page-header">
+  <h1><i class="fa-solid fa-star-half-stroke me-2"></i>Evaluasi Cluster</h1>
+  <p>Elbow Method (SSE), Silhouette Score, dan Davies-Bouldin Index.</p>
+</div>
+
+<div class="d-flex justify-content-end mb-4">
+  <a href="{{ url_for('download_laporan') }}" class="btn btn-success" target="_blank">
+    <i class="fa-solid fa-file-pdf me-1"></i>Cetak Laporan PDF
+  </a>
+</div>
+
+{% if state.metrics %}
+<div class="row g-3 mb-4">
+  {% for label, val, acc in [
+    ('Total Data', state.metrics.total_data, 'accent-blue'),
+    ('Jumlah Cluster', state.metrics.jumlah_cluster, 'accent-purple'),
+    ('Silhouette Score', state.metrics.silhouette_score, 'accent-green'),
+    ('Davies-Bouldin', state.metrics.davies_bouldin_score, 'accent-red'),
+  ] %}
+  <div class="col-6 col-md-3">
+    <div class="metric-card {{ acc }}">
+      <p>{{ label }}</p>
+      <h3>{{ val }}</h3>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if state.preprocessing_stats %}
+<div class="custom-card mb-4">
+  <div class="card-body">
+    <h5 class="chart-title mb-3">Statistik Preprocessing</h5>
+    <div class="table-responsive">
+      <table class="table table-bordered mb-0">
+        <thead>
+          <tr>
+            <th>Data Awal</th><th>Tidak Null</th>
+            <th>Lolos Filter Mentah</th><th>Lolos Bersih</th>
+            <th>Duplikat Hapus</th><th>Data Final</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="text-center">{{ state.preprocessing_stats.jumlah_data_awal }}</td>
+            <td class="text-center">{{ state.preprocessing_stats.jumlah_tidak_null }}</td>
+            <td class="text-center">{{ state.preprocessing_stats.jumlah_setelah_filter_raw }}</td>
+            <td class="text-center">{{ state.preprocessing_stats.jumlah_setelah_min_kata_bersih }}</td>
+            <td class="text-center">{{ state.preprocessing_stats.jumlah_duplikat_dihapus }}</td>
+            <td class="text-center fw-bold" style="color:var(--nb-green);">{{ state.preprocessing_stats.jumlah_data_valid }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% if state.best_k %}
+<div class="row g-3 mb-4">
+  {% for label, val, sub in [
+    ('K Dipilih', state.best_k.dipilih, ''),
+    ('K Terbaik Silhouette', state.best_k.silhouette.k, 'Nilai ' ~ state.best_k.silhouette.nilai),
+    ('K Terbaik DBI', state.best_k.davies_bouldin.k, 'Nilai ' ~ state.best_k.davies_bouldin.nilai),
+  ] %}
+  <div class="col-md-4">
+    <div class="metric-card accent-yellow text-center">
+      <p>{{ label }}</p>
+      <h3 style="font-size:30px;">{{ val }}</h3>
+      {% if sub %}<small style="color:#374151;">{{ sub }}</small>{% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Charts row 1 -->
+<div class="row g-4 mb-4">
+  <div class="col-lg-6">
+    <div class="custom-card">
+      <div class="card-body">
+        <div class="chart-header">
+          <h5 class="chart-title">Elbow Method (SSE)</h5>
+          <button class="btn-download-chart" onclick="downloadChart('sseChart','elbow.png')">
+            <i class="fa-solid fa-download"></i> PNG
+          </button>
+        </div>
+        <div class="chart-wrapper"><canvas id="sseChart"></canvas></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="custom-card">
+      <div class="card-body">
+        <div class="chart-header">
+          <h5 class="chart-title">Silhouette Score per K</h5>
+          <button class="btn-download-chart" onclick="downloadChart('silChart','silhouette.png')">
+            <i class="fa-solid fa-download"></i> PNG
+          </button>
+        </div>
+        <div class="chart-wrapper"><canvas id="silChart"></canvas></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Charts row 2 -->
+<div class="row g-4 mb-4">
+  <div class="col-lg-7">
+    <div class="custom-card h-100">
+      <div class="card-body">
+        <div class="chart-header">
+          <h5 class="chart-title">Silhouette Rata-rata per Cluster</h5>
+          <button class="btn-download-chart" onclick="downloadChart('clusterSilChart','sil_per_cluster.png')">
+            <i class="fa-solid fa-download"></i> PNG
+          </button>
+        </div>
+        <div class="chart-wrapper chart-wrapper-sm"><canvas id="clusterSilChart"></canvas></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="custom-card h-100">
+      <div class="card-body">
+        <h5 class="chart-title">Validasi Seed Topic</h5>
+        {% if state.seed_summary %}
+        <div class="table-responsive">
+          <table class="table table-bordered mb-0">
+            <thead><tr><th>Kategori</th><th class="text-center">Jumlah</th></tr></thead>
+            <tbody>
+              {% for key, val in state.seed_summary.items() %}
+              <tr><td>{{ key }}</td><td class="text-center font-monospace">{{ val }}</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <p style="color:#6B7280;">Belum ada ringkasan seed topic.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DBI chart -->
+<div class="custom-card">
+  <div class="card-body">
+    <div class="chart-header">
+      <h5 class="chart-title">Davies-Bouldin Index per K</h5>
+      <button class="btn-download-chart" onclick="downloadChart('dbiChart','dbi.png')">
+        <i class="fa-solid fa-download"></i> PNG
+      </button>
+    </div>
+    <div class="chart-wrapper"><canvas id="dbiChart"></canvas></div>
+    <div class="alert alert-info mt-4 mb-0">
+      <i class="fa-solid fa-circle-info me-2"></i>
+      <strong>Catatan:</strong> Silhouette rendah masih wajar untuk komentar media sosial — teks pendek, tidak baku, dan topik sering tumpang tindih.
+    </div>
+  </div>
+</div>
+
+<script>
+const eL = {{ state.eval_labels|tojson }};
+const eS = {{ state.eval_sse|tojson }};
+const eSil = {{ state.eval_silhouette|tojson }};
+const eDbi = {{ state.eval_dbi|tojson }};
+const cQ = {{ state.cluster_quality|tojson }};
+const CC = ["#2563EB","#F97316","#22C55E","#8B5CF6","#EF4444","#EC4899","#14B8A6","#6366F1"];
+
+const lineOpts = (color) => ({
+  responsive:true, maintainAspectRatio:false,
+  plugins:{ legend:{display:false} },
+  scales:{ x:{grid:{color:'#E5E7EB'},ticks:{color:'#374151',font:{weight:'700'}}},
+           y:{grid:{color:'#E5E7EB'},ticks:{color:'#374151'}} }
+});
+
+[['sseChart',eS,'#2563EB'],['silChart',eSil,'#22C55E'],['dbiChart',eDbi,'#EF4444']].forEach(([id,data,col])=>{
+  new Chart(document.getElementById(id), {
+    type:'line',
+    data:{ labels:eL, datasets:[{ data, borderColor:col, backgroundColor:col+'22',
+      borderWidth:3, tension:0.3, pointRadius:5, pointBackgroundColor:col,
+      pointBorderColor:'#1A1A1A', pointBorderWidth:2, fill:true }]},
+    options: lineOpts(col)
+  });
+});
+
+new Chart(document.getElementById('clusterSilChart'), {
+  type:'bar',
+  data:{ labels:cQ.map(i=>'C'+i.cluster), datasets:[{
+    label:'Silhouette Rata-rata', data:cQ.map(i=>i.silhouette_rata2),
+    backgroundColor:cQ.map((_,i)=>CC[i%CC.length]),
+    borderColor:'#1A1A1A', borderWidth:2, borderRadius:8, borderSkipped:false }]},
+  options:{ responsive:true, maintainAspectRatio:false,
+    plugins:{legend:{display:false}},
+    scales:{ y:{beginAtZero:true,grid:{color:'#E5E7EB'},ticks:{color:'#374151'}},
+             x:{grid:{display:false},ticks:{color:'#1A1A1A',font:{weight:'700',size:14}}} } }
+});
+
+function downloadChart(id,name) {
+  const a=document.createElement('a'); a.download=name;
+  a.href=document.getElementById(id).toDataURL('image/png'); a.click();
+}
+</script>
+{% endblock %}
