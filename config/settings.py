@@ -3,6 +3,9 @@ config/settings.py
 Centralized configuration — semua konstanta, credential, path ada di sini.
 """
 import os
+from dotenv import load_dotenv
+
+load_dotenv()  # baca .env otomatis, tidak menimpa env var yang sudah ada
 
 # ── Flask ─────────────────────────────────────────────────────────────────────
 SECRET_KEY: str = os.environ.get("SECRET_KEY", "kmeans-mandiri-ta-2024-secret")
