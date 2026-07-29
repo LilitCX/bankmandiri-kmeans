@@ -603,7 +603,18 @@ strong, b { font-weight: 700; color: var(--nb-black); }
   color: var(--nb-black);
 }
 .table-bordered { border: var(--nb-border); }
-.table-responsive { border-radius: var(--nb-radius); overflow: hidden; border: var(--nb-border); box-shadow: var(--nb-shadow); }
+.table-responsive {
+  border-radius: var(--nb-radius);
+  overflow-x: auto;   /* scroll horizontal di mobile, bukan hidden */
+  overflow-y: visible;
+  border: var(--nb-border);
+  box-shadow: var(--nb-shadow);
+  -webkit-overflow-scrolling: touch; /* scroll mulus di iOS */
+}
+/* Pastikan tabel di dalam tidak memotong konten */
+.table-responsive > .table {
+  min-width: 480px; /* minimal lebar agar kolom tidak hancur */
+}
 
 /* ============================================================
    BUTTONS
@@ -928,6 +939,70 @@ hr { border-color: var(--nb-black); opacity: 1; border-width: 2px; }
   .btn { font-size: 13px; padding: 9px 14px; }
   .form-control, .form-select { font-size: 15px; } /* Prevent iOS zoom */
   .chart-wrapper { height: 240px; }
+}
+
+/* ============================================================
+   CHART LEGEND SCROLL — mobile
+============================================================ */
+/* Wrapper agar legend scatter bisa scroll horizontal di HP */
+.chart-wrapper-scroll-legend {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.chart-canvas-area {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+}
+.chart-canvas-area canvas {
+  width: 100% !important;
+}
+.scatter-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  padding: 10px 4px 4px;
+  justify-content: center;
+}
+.scatter-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--nb-black);
+  white-space: nowrap;
+  cursor: default;
+}
+.scatter-legend-dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  border: 1.5px solid rgba(0,0,0,0.25);
+}
+
+@media (max-width: 600px) {
+  .scatter-legend {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    padding-bottom: 6px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+  .scatter-legend::-webkit-scrollbar { height: 4px; }
+  .scatter-legend::-webkit-scrollbar-thumb { background: #9CA3AF; border-radius: 4px; }
+
+  /* Legend inline (visualisasi.html) — scroll di mobile juga */
+  #scatterLegend, #laporanScatterLegend {
+    overflow-x: auto;
+    flex-wrap: nowrap !important;
+    justify-content: flex-start !important;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 6px;
+  }
 }
 
 /* ============================================================

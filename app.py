@@ -97,8 +97,13 @@ def login():
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "")
         if USERS.get(username) == password:
+            # Reset seluruh state kalkulasi setiap kali login
+            from services.state import STATE, _empty
+            STATE.update(_empty())
+            session.clear()
             session["logged_in"] = True
             session["username"] = username
+            session["fresh_login"] = True   # flag: jangan restore sesi lama
             return redirect(url_for("dashboard"))
         error = "Username atau password salah. Silakan coba lagi."
     return render_template("login.html", error=error)
@@ -107,6 +112,8 @@ def login():
 @app.route("/logout")
 def logout():
     session.clear()
+    from services.state import STATE, _empty
+    STATE.update(_empty())
     return redirect(url_for("login"))
 
 
@@ -115,7 +122,12 @@ def logout():
 @app.route("/")
 @login_required
 def dashboard():
-    try_restore_latest()
+    # Hanya restore jika session bukan "fresh login" (bukan sesi yang baru dibuat)
+    if not session.get("fresh_login"):
+        try_restore_latest(username=session.get("username"))
+    else:
+        # Hapus flag fresh_login setelah satu kali kunjungan dashboard
+        session.pop("fresh_login", None)
     return render_template(
         "dashboard.html",
         state=STATE,
@@ -307,6 +319,10 @@ def clustering():
         except (ValueError, TypeError):
             k = DEFAULT_K
 
+        # Batasi hanya 2, 3, 4, 5
+        if k not in (2, 3, 4, 5):
+            k = DEFAULT_K
+
         n = len(STATE["processed_df"])
         if n < 3:
             set_error("Data terlalu sedikit untuk clustering (minimal 3 baris).")
@@ -328,11 +344,14 @@ def clustering():
                 preprocessing_stats = STATE["preprocessing_stats"],
             )
             apply_metadata(metadata, result_dir)
-            # Simpan ke Supabase agar persisten lintas restart
+            # Simpan ke Supabase agar persisten lintas restart.
+            # Isi CSV di-encode base64 dan disimpan di kolom csv_content
+            # sehingga bisa di-restore setelah server restart tanpa file lokal.
             save_clustering_result(
                 result_id=result_id,
                 metadata=metadata,
                 username=session.get("username", "unknown"),
+                csv_path=STATE.get("upload_path"),
             )
             # Bersihkan hasil lama (simpan 5 terakhir per user)
             delete_old_clustering_results(
@@ -355,7 +374,8 @@ def _require_result():
     """Kembalikan True jika result sudah ada / berhasil di-restore."""
     if STATE["result_df"] is not None:
         return True
-    return try_restore_latest()
+    from flask import session as _session
+    return try_restore_latest(username=_session.get("username"))
 
 
 @app.route("/visualisasi")

@@ -89,8 +89,8 @@
             </td>
             <td><strong>{{ item.label }}</strong></td>
             <td class="text-center font-monospace fw-bold">{{ item.jumlah }}</td>
-            <td class="text-center font-monospace">{{ item.persen }}%</td>
-            <td class="text-center font-monospace">{{ item.silhouette_rata2 }}</td>
+            <td class="text-center font-monospace">{{ "%.2f"|format(item.persen) }}%</td>
+            <td class="text-center font-monospace">{{ "%.4f"|format(item.silhouette_rata2) if item.silhouette_rata2 is not none else '-' }}</td>
             <td>
               <div class="laporan-word-tags">
                 {% for word in item.top_words[:5] %}
@@ -126,15 +126,15 @@
         <div class="laporan-stat-row" style="margin:0;">
           <span class="laporan-stat-chip">
             <i class="fa-solid fa-comment me-1" style="color:{{ colors[ci] }};"></i>
-            {{ item.jumlah }} komentar ({{ item.persen }}%)
+            {{ item.jumlah }} komentar ({{ "%.2f"|format(item.persen) }}%)
           </span>
           <span class="laporan-stat-chip">
-            Silhouette: <strong>{{ item.silhouette_rata2 }}</strong>
+            Silhouette: <strong>{{ "%.4f"|format(item.silhouette_rata2) if item.silhouette_rata2 is not none else '-' }}</strong>
           </span>
           <span class="laporan-stat-chip">
-            Min: <strong style="color:#DC2626;">{{ item.silhouette_min }}</strong>
+            Min: <strong style="color:#DC2626;">{{ "%.4f"|format(item.silhouette_min) if item.silhouette_min is not none else '-' }}</strong>
             &nbsp;|&nbsp;
-            Max: <strong style="color:#15803D;">{{ item.silhouette_max }}</strong>
+            Max: <strong style="color:#15803D;">{{ "%.4f"|format(item.silhouette_max) if item.silhouette_max is not none else '-' }}</strong>
           </span>
         </div>
       </div>
@@ -166,7 +166,7 @@
             <thead>
               <tr>
                 <th style="width:45%;">Komentar Asli</th>
-                <th style="width:43%;">Token Setelah Preprocessing</th>
+                <th style="width:43%;">Komentar Setelah Preprocessing</th>
                 <th class="text-center" style="width:12%;">Silhouette</th>
               </tr>
             </thead>
@@ -182,7 +182,7 @@
                 </td>
                 <td class="text-center font-monospace fw-bold"
                     style="color:{{ '#15803D' if (sample.silhouette_sample or 0) >= 0 else '#DC2626' }};">
-                  {{ sample.silhouette_sample }}
+                  {{ "%.4f"|format(sample.silhouette_sample) if sample.silhouette_sample is not none else '-' }}
                 </td>
               </tr>
               {% endfor %}

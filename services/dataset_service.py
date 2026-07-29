@@ -40,21 +40,20 @@ def _read_csv_robust(filepath: str) -> pd.DataFrame:
 
 def load_dataset(filepath: str, source_message: str, filter_type: str = "all") -> pd.DataFrame:
     """
-    Load CSV → STATE. Mengembalikan DataFrame yang dimuat.
+    Load CSV ke STATE. Mengembalikan DataFrame yang dimuat.
 
     Parameters
     ----------
     filepath : str
-        Path lokal atau URL Cloudinary ke file CSV.
+        Path lokal ke file CSV.
     source_message : str
         Pesan sukses yang akan disimpan di STATE["message"].
     filter_type : str
         "all" → semua data; "bank_only" → filter kolom is_banking == True.
     """
-    # Resolve URL Cloudinary ke path lokal jika perlu
     local_path = get_file_path(filepath)
     if local_path is None:
-        raise ValueError(f"File tidak ditemukan atau gagal diakses: {filepath}")
+        raise ValueError(f"File tidak ditemukan: {filepath}")
 
     df = _read_csv_robust(local_path)
 
@@ -185,7 +184,6 @@ def apply_metadata(metadata: dict, result_dir: str) -> None:
     # Prioritas 3: generate dari top_words jika kedua cara di atas gagal
     for cid, words in top_words.items():
         if (cid not in wordclouds or wordclouds[cid] is None) and words:
-            # Ulangi kata berdasarkan posisi untuk beri bobot (kata pertama lebih besar)
             weighted = " ".join(
                 word for i, word in enumerate(words)
                 for _ in range(max(1, len(words) - i))
@@ -234,24 +232,49 @@ def apply_metadata(metadata: dict, result_dir: str) -> None:
     })
 
 
-def try_restore_latest() -> bool:
-    """Muat ulang hasil clustering terakhir dari Supabase atau disk jika STATE kosong."""
+def try_restore_latest(username: str | None = None) -> bool:
+    """
+    Muat ulang hasil clustering terakhir dari Supabase atau disk jika STATE kosong.
+
+    Urutan prioritas:
+    1. Supabase — restore metadata + CSV (disimpan sebagai base64 di kolom csv_content)
+    2. Disk lokal — fallback untuk development tanpa Supabase
+
+    Parameters
+    ----------
+    username : str | None
+        Hanya restore data milik user ini. Jika None, ambil yang paling baru.
+    """
     if STATE["result_df"] is not None:
         return True
-    
-    # Prioritas 1: Coba dari Supabase
-    metadata = get_latest_clustering_result()
+
+    # ── Prioritas 1: Supabase ─────────────────────────────────────────────────
+    metadata = get_latest_clustering_result(username=username)
     if metadata:
         try:
-            # Metadata dari Supabase tidak punya result_dir, gunakan /tmp
             result_dir = "/tmp/restored_results"
+            os.makedirs(result_dir, exist_ok=True)
             apply_metadata(metadata, result_dir)
+
+            # Selalu coba restore CSV dari Supabase agar pipeline bisa dijalankan
+            # ulang (upload_path mungkin kosong atau menunjuk file yang sudah tidak ada).
+            from services.db import restore_csv_from_db
+            restored_csv = restore_csv_from_db(username=username)
+            if restored_csv:
+                STATE["upload_path"] = restored_csv
+            elif not STATE.get("upload_path") or not os.path.exists(
+                STATE.get("upload_path", "")
+            ):
+                # CSV tidak ada di Supabase dan file lokal pun hilang — bersihkan
+                # upload_path agar tidak ada path stale yang memicu FileNotFoundError.
+                STATE["upload_path"] = None
+
             STATE["message"] = "Hasil clustering terakhir berhasil dimuat dari database."
             return True
         except Exception as e:
             print(f"[ERROR] Gagal restore dari Supabase: {e}")
-    
-    # Prioritas 2: Fallback ke disk lokal (untuk dev lokal)
+
+    # ── Prioritas 2: Disk lokal ───────────────────────────────────────────────
     if not os.path.isdir(RESULTS_FOLDER):
         return False
 

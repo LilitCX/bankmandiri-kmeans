@@ -92,7 +92,7 @@
             </td>
             <td><strong>{{ item.label }}</strong></td>
             <td class="text-center font-monospace fw-bold">{{ item.jumlah }}</td>
-            <td class="text-center font-monospace">{{ item.persen }}%</td>
+            <td class="text-center font-monospace">{{ "%.2f"|format(item.persen) }}%</td>
             <td>
               <div class="laporan-word-tags">
                 {% for word in item.top_words[:6] %}
@@ -119,7 +119,18 @@
     </p>
     <div style="background:var(--nb-white);border:var(--nb-border);border-radius:10px;
                 box-shadow:var(--nb-shadow);padding:24px;">
-      <div style="height:400px;"><canvas id="laporanScatterChart"></canvas></div>
+      <div style="height:380px;position:relative;"><canvas id="laporanScatterChart"></canvas></div>
+      <!-- Legend server-side (Jinja) — tidak bisa ter-cache -->
+      {% set CC_l = ["#2563EB","#F97316","#22C55E","#8B5CF6","#EF4444","#EC4899","#14B8A6","#6366F1","#FFE44D","#64748B"] %}
+      <div style="display:flex;flex-direction:column;align-items:center;gap:7px;padding:14px 0 2px;">
+        {% for item in state.cluster_summary %}
+        {% set ci = loop.index0 % 10 %}
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="width:14px;height:14px;border-radius:50%;display:inline-block;flex-shrink:0;background:{{ CC_l[ci] }};"></span>
+          <span style="font-size:14px;font-weight:600;color:#1A1A1A;">C{{ item.cluster }} — {{ item.label }}</span>
+        </div>
+        {% endfor %}
+      </div>
     </div>
   </div>
   {% endif %}
@@ -242,12 +253,12 @@
     }
   });
 
-  // Scatter chart
+  // Scatter chart — legend sudah di-render server-side (Jinja), tidak perlu JS
   {% if state.scatter_data %}
   const scatterRaw = {{ state.scatter_data|tojson }};
   const summaryMap = {};
   {% for item in state.cluster_summary %}
-  summaryMap[{{ item.cluster }}] = "{{ item.label | truncate(20, true, '…') }}";
+  summaryMap[{{ item.cluster }}] = {{ item.label | tojson }};
   {% endfor %}
   const grouped = {};
   scatterRaw.forEach(p => {
@@ -268,8 +279,7 @@
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: {
-        legend: { position: 'bottom', labels: { usePointStyle: true, pointStyleWidth: 10,
-          color: '#1A1A1A', font: { size: 12, family: 'Space Grotesk' }, padding: 14 } },
+        legend: { display: false },
         tooltip: { callbacks: { label: c => [c.dataset.label, c.raw.komentar || ''] } }
       },
       scales: {

@@ -30,19 +30,19 @@
           <h5 style="margin:0;font-weight:700;color:var(--nb-black);font-size:16px;">{{ item.label }}</h5>
         </div>
         <p style="color:#4B5563;font-size:13px;margin:0;">
-          <strong>{{ item.jumlah }}</strong> komentar &bull; <strong>{{ item.persen }}%</strong> dari total data
+          <strong>{{ item.jumlah }}</strong> komentar &bull; <strong>{{ "%.2f"|format(item.persen) }}%</strong> dari total data
         </p>
       </div>
       <div class="d-flex gap-2 flex-wrap">
         <span style="background:{{ bg_colors[ci] }};color:var(--nb-black);
                      border:2px solid {{ colors[ci] }};border-radius:8px;
                      padding:6px 13px;font-size:12px;font-weight:700;display:inline-block;">
-          Silhouette Rata-rata: <strong>{{ item.silhouette_rata2 }}</strong>
+          Silhouette Rata-rata: <strong>{{ "%.4f"|format(item.silhouette_rata2) if item.silhouette_rata2 is not none else '-' }}</strong>
         </span>
         <span style="background:#F3F4F6;color:var(--nb-black);
                      border:2px solid #1A1A1A;border-radius:8px;
                      padding:6px 13px;font-size:12px;font-weight:700;display:inline-block;">
-          Min: {{ item.silhouette_min }} &bull; Max: {{ item.silhouette_max }}
+          Min: {{ "%.4f"|format(item.silhouette_min) if item.silhouette_min is not none else '-' }} &bull; Max: {{ "%.4f"|format(item.silhouette_max) if item.silhouette_max is not none else '-' }}
         </span>
       </div>
     </div>
@@ -83,7 +83,7 @@
               </td>
               <td class="text-center font-monospace fw-bold"
                   style="color:{{ '#15803D' if (sample.silhouette_sample or 0) >= 0 else '#DC2626' }};">
-                {{ sample.silhouette_sample }}
+                {{ "%.4f"|format(sample.silhouette_sample|float) if sample.silhouette_sample is not none else '-' }}
               </td>
             </tr>
             {% endfor %}

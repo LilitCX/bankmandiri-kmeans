@@ -6,6 +6,8 @@
   <p>Distribusi cluster, scatter plot t-SNE, dan wordcloud per cluster.</p>
 </div>
 
+{% set CC = ["#2563EB","#F97316","#22C55E","#8B5CF6","#EF4444","#EC4899","#14B8A6","#6366F1","#FFE44D","#64748B"] %}
+
 <div class="row g-4 mb-4">
   <!-- Bar chart -->
   <div class="col-lg-6">
@@ -24,7 +26,7 @@
 
   <!-- Scatter plot -->
   <div class="col-lg-6">
-    <div class="custom-card h-100">
+    <div class="custom-card">
       <div class="card-body">
         <div class="chart-header">
           <div>
@@ -35,7 +37,23 @@
             <i class="fa-solid fa-download"></i> PNG
           </button>
         </div>
-        <div class="chart-wrapper"><canvas id="scatterChart"></canvas></div>
+
+        <!-- Canvas -->
+        <div style="position:relative;height:300px;">
+          <canvas id="scatterChart"></canvas>
+        </div>
+
+        <!-- Legend server-side (Jinja) — tidak bisa ter-cache, selalu fresh -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:7px;padding:14px 0 2px;">
+          {% for item in state.cluster_summary %}
+          {% set ci = loop.index0 % 10 %}
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="width:14px;height:14px;border-radius:50%;display:inline-block;flex-shrink:0;background:{{ CC[ci] }};"></span>
+            <span style="font-size:14px;font-weight:600;color:#1A1A1A;">C{{ item.cluster }} — {{ item.label }}</span>
+          </div>
+          {% endfor %}
+        </div>
+
       </div>
     </div>
   </div>
@@ -110,7 +128,7 @@ new Chart(document.getElementById('clusterBarChart'), {
              y:{ beginAtZero:true, grid:{color:'#E5E7EB'}, ticks:{color:'#374151'} } } }
 });
 
-// Scatter
+// Scatter — legend:false karena legend sudah di-render server-side
 const grouped = {};
 vd.scatter_data.forEach(p => {
   if (!grouped[p.cluster]) grouped[p.cluster]=[];
@@ -119,19 +137,24 @@ vd.scatter_data.forEach(p => {
 new Chart(document.getElementById('scatterChart'), {
   type:'scatter',
   data:{ datasets: Object.keys(grouped).map((cId,idx) => ({
-    label:'C'+cId+' — '+(labelMap[parseInt(cId)]||('Cluster '+cId)),
-    data:grouped[cId],
-    backgroundColor:CC[idx%CC.length]+'BB', borderColor:CC[idx%CC.length],
+    label: 'C'+cId+' — '+(labelMap[parseInt(cId)]||('Cluster '+cId)),
+    data: grouped[cId],
+    backgroundColor: CC[idx%CC.length]+'BB',
+    borderColor: CC[idx%CC.length],
     borderWidth:1.5, pointRadius:4, pointHoverRadius:6
-  })) },
+  }))},
   options:{ responsive:true, maintainAspectRatio:false,
-    plugins:{ legend:{ position:'bottom', labels:{ usePointStyle:true, pointStyleWidth:10,
-      color:'#1A1A1A', font:{size:12,family:'Space Grotesk'}, padding:14 } },
-      tooltip:{ callbacks:{ label: c => [c.dataset.label,'Komentar: '+(c.raw.komentar||'')] } } },
-    scales:{ x:{ title:{display:true,text:'t-SNE Dim 1',color:'#4B5563',font:{weight:'700'}},
-                 grid:{color:'#E5E7EB'}, ticks:{color:'#374151'} },
-             y:{ title:{display:true,text:'t-SNE Dim 2',color:'#4B5563',font:{weight:'700'}},
-                 grid:{color:'#E5E7EB'}, ticks:{color:'#374151'} } } }
+    plugins:{
+      legend:{ display:false },
+      tooltip:{ callbacks:{ label: c => [c.dataset.label,'Komentar: '+(c.raw.komentar||'')] } }
+    },
+    scales:{
+      x:{ title:{display:true,text:'t-SNE Dim 1',color:'#4B5563',font:{weight:'700'}},
+          grid:{color:'#E5E7EB'}, ticks:{color:'#374151'} },
+      y:{ title:{display:true,text:'t-SNE Dim 2',color:'#4B5563',font:{weight:'700'}},
+          grid:{color:'#E5E7EB'}, ticks:{color:'#374151'} }
+    }
+  }
 });
 
 function downloadChart(id, name) {

@@ -226,6 +226,51 @@ def _html_evaluasi(state: dict, logo_b64: str, now_str: str) -> str:
             <td class="td-center td-num">{sil_v}</td>
         </tr></tbody></table></div>"""
 
+    # ── Tabel perbandingan k (Inertia & Silhouette untuk k=2..5)
+    eval_html = ""
+    evaluation = state.get("metadata", {}) or {}
+    evaluation = evaluation.get("evaluation", {}) if isinstance(evaluation, dict) else {}
+    # Fallback ke state langsung
+    k_values  = evaluation.get("k_values",  state.get("eval_labels", []))
+    inertia   = evaluation.get("inertia",   state.get("eval_sse", []))
+    sil_vals  = evaluation.get("silhouette", state.get("eval_silhouette", []))
+    # Normalkan k_values menjadi list int
+    if k_values and isinstance(k_values[0], str):
+        k_vals_int = [int(x.replace("K=","")) for x in k_values]
+    else:
+        k_vals_int = [int(x) for x in k_values]
+
+    if k_vals_int and inertia and sil_vals and len(k_vals_int)==len(inertia)==len(sil_vals):
+        best_sil_k = k_vals_int[sil_vals.index(max(sil_vals))] if sil_vals else None
+        chosen_k   = int(state.get("k", bk.get("dipilih", 0)))
+        rows_eval  = ""
+        for ki, ine, sil in zip(k_vals_int, inertia, sil_vals):
+            is_ch  = (ki == chosen_k)
+            is_bs  = (ki == best_sil_k)
+            remark = (" — K dipilih &amp; silhouette terbaik" if is_ch and is_bs
+                      else " — K yang digunakan" if is_ch
+                      else " — Silhouette tertinggi" if is_bs
+                      else "")
+            style  = " style='background:#EFF6FF;font-weight:700;'" if is_ch else ""
+            rows_eval += (f"<tr{style}>"
+                          f"<td class='td-center td-num'>K={ki}</td>"
+                          f"<td class='td-center td-num'>{_fmt_float(ine,4)}</td>"
+                          f"<td class='td-center td-num'>{_fmt_float(sil,4)}</td>"
+                          f"<td class='td-center' style='font-size:9pt;color:#475569;'>{remark}</td>"
+                          f"</tr>")
+        eval_html = f"""<div class="section">
+        <div class="section-title">Perbandingan Nilai k (Elbow &amp; Silhouette)</div>
+        <table><thead><tr>
+            <th>Jumlah Cluster (k)</th>
+            <th>Inertia / SSE</th>
+            <th>Silhouette Score</th>
+            <th>Keterangan</th>
+        </tr></thead><tbody>{rows_eval}</tbody></table>
+        <p style='font-size:9pt;color:#64748B;margin-top:6px;'>
+            Elbow: cari titik di mana penurunan Inertia mulai melambat.
+            Silhouette: nilai lebih tinggi = cluster lebih kompak dan terpisah.
+        </p></div>"""
+
     # ── Kualitas per cluster
     cq_html = ""
     if cs:
@@ -233,11 +278,12 @@ def _html_evaluasi(state: dict, logo_b64: str, now_str: str) -> str:
         for item in cs:
             cid   = int(item.get("cluster", 0))
             color = _cluster_color(cid)
+            persen = item.get("persen", 0)
             rows += f"""<tr>
                 <td class="td-center"><span class="cluster-badge" style="background:{color};">C{cid}</span></td>
                 <td><strong>{item.get("label","-")}</strong></td>
                 <td class="td-center td-num">{_fmt_int(item.get("jumlah"))}</td>
-                <td class="td-center td-num">{item.get("persen",0):.1f}%</td>
+                <td class="td-center td-num">{persen:.2f}%</td>
                 <td class="td-center td-num">{_fmt_float(item.get("silhouette_rata2"),4)}</td>
                 <td class="td-center td-num">{_fmt_float(item.get("silhouette_min"),4)}</td>
                 <td class="td-center td-num">{_fmt_float(item.get("silhouette_max"),4)}</td>
@@ -263,9 +309,10 @@ def _html_evaluasi(state: dict, logo_b64: str, now_str: str) -> str:
             f"<div class='body-content'>"
             f"<div class='section'><div class='section-title'>Metrik Utama Model</div>"
             f"{grid}{model_rows}</div>"
-            f"{prep_html}{bk_html}{cq_html}{seed_html}"
+            f"{prep_html}{bk_html}{eval_html}{cq_html}{seed_html}"
             f"<p style='font-size:9pt;color:#64748B;margin-top:8px;'>"
-            f"Silhouette mendekati 1 = cluster sangat baik.</p>"
+            f"Silhouette mendekati 1 = cluster sangat kompak dan terpisah baik. "
+            f"Elbow ditandai penurunan Inertia yang mulai melambat.</p>"
             f"{_signature()}</div>")
     return _wrap_html("Laporan Evaluasi Cluster", body)
 
@@ -452,7 +499,7 @@ def _html_hasil(state: dict, logo_b64: str, now_str: str,
 
         df_show  = df.head(200)
         col_map  = {"no":"No","tanggal":"Tanggal","username":"Username",
-                    "komentar":"Komentar Asli","komentar_bersih":"Token Bersih",
+                    "komentar":"Komentar Asli","komentar_bersih":"Komentar Bersih",
                     "cluster":"Cluster","label_cluster":"Topik",
                     "silhouette_sample":"Silhouette","seed_match":"Kesesuaian"}
         show_cols = [c for c in df_show.columns
@@ -605,7 +652,7 @@ def _build_all_sections(state: dict, text_col: str) -> str:
             <p style="font-size:9pt;font-weight:700;color:#94A3B8;margin-bottom:4px;">KATA KUNCI</p>
             <div style="margin-bottom:8px;">{words}</div>
             <p style="font-size:9pt;font-weight:700;color:#94A3B8;margin-bottom:4px;">SAMPEL KOMENTAR</p>
-            <table><thead><tr><th>No</th><th>Komentar Asli</th><th>Token Bersih</th><th>Silhouette</th></tr></thead>
+            <table><thead><tr><th>No</th><th>Komentar Asli</th><th>Komentar Bersih</th><th>Silhouette</th></tr></thead>
             <tbody>{srows}</tbody></table></div>"""
         sections += f"""<div class="section page-break">
         <div class="section-title">Detail per Cluster</div>{blocks}</div>"""

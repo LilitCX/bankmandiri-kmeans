@@ -3,13 +3,13 @@
 
 <div class="page-header">
   <h1><i class="fa-solid fa-star-half-stroke me-2"></i>Laporan Evaluasi Cluster</h1>
-  <p>Ringkasan performa model clustering — Elbow Method, Silhouette Score.</p>
+  <p>Ringkasan performa model clustering — Elbow Method (Inertia/SSE) dan Silhouette Score.</p>
 </div>
 
 <div class="laporan-toolbar">
   <span class="laporan-toolbar-title">
     <i class="fa-solid fa-star-half-stroke me-1" style="color:var(--nb-blue);"></i>
-    Laporan Evaluasi — Elbow Method, Silhouette Score.
+    Laporan Evaluasi — Elbow Method (Inertia/SSE), Silhouette Score.
   </span>
   <div class="laporan-toolbar-actions">
     <a href="{{ url_for('download_laporan_evaluasi') }}" class="btn btn-success btn-sm" target="_blank">
@@ -179,9 +179,10 @@
           <tr>
             <th class="text-center">Cluster</th>
             <th class="text-center">Jumlah Data</th>
+            <th class="text-center">%</th>
             <th class="text-center">Silhouette Rata-rata</th>
-            <th class="text-center">Min</th>
-            <th class="text-center">Max</th>
+            <th class="text-center">Sil. Min</th>
+            <th class="text-center">Sil. Max</th>
             <th>Label Topik</th>
           </tr>
         </thead>
@@ -196,10 +197,55 @@
               </span>
             </td>
             <td class="text-center font-monospace fw-bold">{{ item.jumlah }}</td>
-            <td class="text-center font-monospace">{{ item.silhouette_rata2 }}</td>
-            <td class="text-center font-monospace" style="color:#DC2626;">{{ item.silhouette_min }}</td>
-            <td class="text-center font-monospace" style="color:#15803D;">{{ item.silhouette_max }}</td>
+            <td class="text-center font-monospace">{{ "%.2f"|format(item.persen) }}%</td>
+            <td class="text-center font-monospace">{{ "%.4f"|format(item.silhouette_rata2) if item.silhouette_rata2 is not none else '-' }}</td>
+            <td class="text-center font-monospace" style="color:#DC2626;">{{ "%.4f"|format(item.silhouette_min) if item.silhouette_min is not none else '-' }}</td>
+            <td class="text-center font-monospace" style="color:#15803D;">{{ "%.4f"|format(item.silhouette_max) if item.silhouette_max is not none else '-' }}</td>
             <td><strong>{{ item.label }}</strong></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  {# ── Tabel perbandingan k ── #}
+  {% if state.eval_labels and state.eval_sse %}
+  <div class="laporan-section">
+    <h3 class="laporan-section-title">
+      <i class="fa-solid fa-table"></i> Perbandingan Nilai k (Elbow &amp; Silhouette)
+    </h3>
+    <div class="table-responsive" style="border-radius:8px;overflow:hidden;border:2px solid #E2E8F0;box-shadow:none;">
+      <table class="laporan-table">
+        <thead>
+          <tr>
+            <th class="text-center">Jumlah Cluster (k)</th>
+            <th class="text-center">Inertia / SSE</th>
+            <th class="text-center">Silhouette Score</th>
+            <th class="text-center">Keterangan</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for i in range(state.eval_labels|length) %}
+          {% set is_chosen = (state.eval_labels[i] == 'K=' ~ state.k) or (state.eval_labels[i] == 'K=' ~ state.metrics.jumlah_cluster) %}
+          {% set is_best   = state.best_k and state.best_k.silhouette and (state.eval_labels[i] == 'K=' ~ state.best_k.silhouette.k) %}
+          <tr {% if is_chosen %}style="background:#EFF6FF;font-weight:700;"{% endif %}>
+            <td class="text-center font-monospace">
+              {{ state.eval_labels[i] }}
+              {% if is_chosen %}<span class="badge bg-primary ms-2" style="font-size:10px;">Dipilih</span>{% endif %}
+            </td>
+            <td class="text-center font-monospace">{{ state.eval_sse[i] }}</td>
+            <td class="text-center font-monospace">
+              {{ state.eval_silhouette[i] }}
+              {% if is_best %}<span class="badge bg-success ms-2" style="font-size:10px;">Terbaik</span>{% endif %}
+            </td>
+            <td class="text-center" style="font-size:12px;color:#4B5563;">
+              {% if is_chosen and is_best %}K dipilih &amp; silhouette terbaik
+              {% elif is_chosen %}K yang digunakan
+              {% elif is_best %}Silhouette tertinggi
+              {% else %}-{% endif %}
+            </td>
           </tr>
           {% endfor %}
         </tbody>
@@ -237,6 +283,7 @@
     <strong><i class="fa-solid fa-circle-info me-1"></i>Catatan Interpretasi:</strong>
     Silhouette Score mendekati 1 menunjukkan cluster yang kompak dan terpisah baik. Nilai rendah (0.1–0.3)
     masih wajar untuk data komentar media sosial karena teks pendek, tidak baku, dan topik sering tumpang tindih.
+    Elbow method ditandai dengan penurunan Inertia yang mulai melambat seiring bertambahnya k.
   </div>
 
   {# ── No data fallback ── #}

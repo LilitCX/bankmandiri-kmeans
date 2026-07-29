@@ -81,7 +81,7 @@
     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
       <div>
         <h5 class="chart-title mb-1">Hasil Preprocessing</h5>
-        <p style="color:#4B5563;font-size:13px;margin:0;">30 baris pertama — komentar asli vs token bersih.</p>
+        <p style="color:#4B5563;font-size:13px;margin:0;">30 baris pertama — komentar asli vs komentar bersih.</p>
       </div>
       <a href="{{ url_for('clustering') }}" class="btn btn-success">
         <i class="fa-solid fa-circle-nodes me-1"></i>Lanjut Clustering
@@ -92,7 +92,7 @@
         <thead>
           <tr>
             {% for col in preview[0].keys() %}
-            <th>{{ 'Token Bersih' if col == 'komentar_bersih' else col | capitalize }}</th>
+            <th>{{ 'Komentar Bersih' if col == 'komentar_bersih' else col | capitalize }}</th>
             {% endfor %}
           </tr>
         </thead>

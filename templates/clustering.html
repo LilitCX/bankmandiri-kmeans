@@ -44,7 +44,7 @@
           <div class="mb-4">
             <label class="form-label">Jumlah Cluster (k)</label>
             <div class="d-flex flex-wrap gap-2 mt-1" id="k-selector">
-              {% for k in range(2, 11) %}
+              {% for k in [2, 3, 4, 5] %}
               <label class="k-option-label {{ 'k-option-active' if state.k == k else '' }}">
                 <input type="radio" name="jumlah_cluster" value="{{ k }}"
                        {{ 'checked' if state.k == k }} class="d-none k-radio">{{ k }}
@@ -52,7 +52,7 @@
               {% endfor %}
             </div>
             <small style="color:#4B5563;display:block;margin-top:8px;font-size:13px;">
-              Rekomendasi: 4–6 cluster untuk komentar media sosial.
+              Pilihan: 2, 3, 4, atau 5 cluster untuk komentar media sosial.
             </small>
           </div>
           <button type="submit" class="btn btn-primary" id="btn-cluster" style="min-width:200px;">
@@ -76,7 +76,7 @@
             ('fa-compress', '#8B5CF6', 'SVD / LSA', 'Reduksi dimensi Truncated SVD untuk menangkap konsep laten, diikuti normalisasi L2.'),
             ('fa-circle-nodes', '#F97316', 'K-Means Clustering', 'Pengelompokan iteratif berdasarkan jarak Euclidean di ruang LSA. Seed topic-aware jika k=5.'),
             ('fa-scatter-chart', '#22C55E', 't-SNE Proyeksi', 'Proyeksi 2D untuk scatter plot — tidak memengaruhi hasil clustering.'),
-            ('fa-chart-line', '#EF4444', 'Evaluasi', 'Silhouette Score, Davies-Bouldin Index, dan Elbow Method.'),
+            ('fa-chart-line', '#EF4444', 'Evaluasi', 'Elbow Method (SSE/Inertia) dan Silhouette Score untuk mengukur kualitas cluster.'),
           ] %}
           <div class="d-flex gap-3 align-items-start">
             <div style="width:34px;height:34px;border-radius:8px;border:2px solid #1A1A1A;

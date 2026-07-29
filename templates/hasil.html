@@ -65,7 +65,7 @@
               {%- elif col == 'tanggal' %}Tanggal
               {%- elif col == 'username' %}Username
               {%- elif col == 'komentar' %}Komentar Asli
-              {%- elif col == 'komentar_bersih' %}Token Bersih
+              {%- elif col == 'komentar_bersih' %}Komentar Bersih
               {%- elif col == 'cluster' %}Klaster
               {%- elif col == 'label_cluster' %}Topik
               {%- elif col == 'seed_label' %}Seed
@@ -98,7 +98,7 @@
               {%- elif key == 'silhouette_sample' %}
                 <span class="font-monospace fw-bold"
                       style="color:{{ '#15803D' if value|float >= 0 else '#DC2626' }};">
-                  {{ value }}
+                  {{ "%.4f"|format(value|float) if value is not none and value != '' else '-' }}
                 </span>
               {%- elif key == 'seed_match' %}
                 <span class="badge"

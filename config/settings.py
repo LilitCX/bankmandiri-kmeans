@@ -37,7 +37,7 @@ SIGNER_TITLE: str = "Direktur"
 LOGO_PATH: str = os.path.join(STATIC_FOLDER, "logo.png")
 
 # ── Pipeline ──────────────────────────────────────────────────────────────────
-DEFAULT_K: int = 4
+DEFAULT_K: int = 5
 MIN_KATA_RAW: int = 3
 MIN_KATA_BERSIH: int = 2
 MAX_TFIDF_FEATURES: int = 500

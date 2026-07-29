@@ -296,20 +296,20 @@ RULES = {
 }
 
 DEFAULT_CLUSTER_LABELS = {
-    0: "Masalah Aplikasi, Akun & Login",
-    1: "Masalah Saldo, Transaksi & ATM",
-    2: "Pembelian Token Listrik & Utilitas",
-    3: "Pertanyaan & Pengajuan Pinjaman/KUR",
-    4: "Keluhan Pelayanan & Pengalaman Negatif",
+    0: "Masalah Aplikasi, Akun, Login",
+    1: "Masalah Saldo, Transaksi, ATM",
+    2: "Pembelian Token Listrik, Utilitas",
+    3: "Pengajuan Pinjaman / KUR",
+    4: "Keluhan Pelayanan, Pengalaman Negatif",
 }
 
 # Nama ramah untuk setiap kategori RULES
 RULES_LABEL_MAP = {
-    "C0_APP_MASALAH": "Masalah Aplikasi, Akun & Login",
-    "C1_TRANSAKSI": "Masalah Saldo, Transaksi & ATM",
-    "C2_TOKEN_UTILITAS": "Pembelian Token Listrik & Utilitas",
-    "C3_PINJAMAN": "Pertanyaan & Pengajuan Pinjaman/KUR",
-    "C4_KELUHAN_UMUM": "Keluhan Pelayanan & Pengalaman Negatif",
+    "C0_APP_MASALAH": "Masalah Aplikasi, Akun, Login",
+    "C1_TRANSAKSI": "Masalah Saldo, Transaksi, ATM",
+    "C2_TOKEN_UTILITAS": "Pembelian Token Listrik, Utilitas",
+    "C3_PINJAMAN": "Pengajuan Pinjaman / KUR",
+    "C4_KELUHAN_UMUM": "Keluhan Pelayanan, Pengalaman Negatif",
 }
 
 
@@ -640,60 +640,77 @@ def run_clustering(
 
     terms = vectorizer.get_feature_names_out()
     n_tfidf = X_tfidf.shape[1]
-    centroids_full = svd.inverse_transform(kmeans.cluster_centers_)
-    centroids_tfidf = centroids_full[:, :n_tfidf]
+
+    # Top-words: gunakan centroid di ruang LSA lalu inverse-transform ke ruang TF-IDF
+    # agar kata-kata yang dipilih benar-benar mencerminkan isi cluster
+    centroids_lsa = kmeans.cluster_centers_                     # shape (k, n_lsa)
+    centroids_tfidf = svd.inverse_transform(centroids_lsa)[:, :n_tfidf]  # shape (k, n_tfidf)
 
     # Buat label dinamis per cluster berdasarkan top_words & RULES
     labels = {}
     for c in range(jumlah_cluster):
-        sub_tmp = df[df["cluster"] == c]
         top_idx_tmp = centroids_tfidf[c].argsort()[::-1][:15]
         top_words_tmp = [str(terms[j]) for j in top_idx_tmp]
         labels[c] = generate_cluster_label(c, top_words_tmp, jumlah_cluster)
     df["label_cluster"] = df["cluster"].map(labels)
     df["seed_match"] = df.apply(
-        lambda r: "Tidak teridentifikasi" if r["seed_label"] == -1 else ("Cocok" if r["seed_label"] == r["cluster"] else "Beda dari seed"),
+        lambda r: "Tidak teridentifikasi" if r["seed_label"] == -1
+                  else ("Cocok" if r["seed_label"] == r["cluster"] else "Beda dari seed"),
         axis=1,
     )
 
+    total_valid = len(df)
     summary = []
     for c in range(jumlah_cluster):
         sub = df[df["cluster"] == c]
         top_idx = centroids_tfidf[c].argsort()[::-1][:15]
         top_words = [str(terms[j]) for j in top_idx]
-        sample_cols = [komentar_col, "komentar_bersih", "silhouette_sample"]
-        samples = (
-            sub.sort_values("silhouette_sample", ascending=False)[sample_cols]
+        # Ambil 5 sampel dengan silhouette tertinggi; pastikan semua kolom yang diperlukan ada
+        avail_sample_cols = [col for col in [komentar_col, "komentar_bersih", "silhouette_sample"] if col in sub.columns]
+        samples_df = (
+            sub.sort_values("silhouette_sample", ascending=False)[avail_sample_cols]
             .head(5)
-            .round({"silhouette_sample": 4})
-            .to_dict(orient="records")
         )
+        # Bulatkan silhouette_sample ke 4 desimal di dict
+        samples = []
+        for _, row_s in samples_df.iterrows():
+            rec = row_s.to_dict()
+            if "silhouette_sample" in rec and rec["silhouette_sample"] is not None:
+                try:
+                    rec["silhouette_sample"] = round(float(rec["silhouette_sample"]), 4)
+                except Exception:
+                    pass
+            samples.append(rec)
+
+        jumlah_c = int(len(sub))
+        persen_c = round((jumlah_c / total_valid) * 100, 2) if total_valid > 0 else 0.0
         summary.append({
             "cluster": c,
             "label": labels[c],
-            "jumlah": int(len(sub)),
-            "persen": round((len(sub) / len(df)) * 100, 2),
-            "silhouette_rata2": round(float(sub["silhouette_sample"].mean()), 4) if len(sub) else None,
-            "silhouette_min": round(float(sub["silhouette_sample"].min()), 4) if len(sub) else None,
-            "silhouette_max": round(float(sub["silhouette_sample"].max()), 4) if len(sub) else None,
+            "jumlah": jumlah_c,
+            "persen": persen_c,
+            "silhouette_rata2": round(float(sub["silhouette_sample"].mean()), 4) if jumlah_c else None,
+            "silhouette_min":   round(float(sub["silhouette_sample"].min()),  4) if jumlah_c else None,
+            "silhouette_max":   round(float(sub["silhouette_sample"].max()),  4) if jumlah_c else None,
             "top_words": top_words,
             "samples": samples,
         })
 
-    k_values = list(range(2, min(8, len(df) - 1) + 1))
+    # Evaluasi hanya untuk k = 2, 3, 4, 5 (sesuai pilihan yang tersedia di UI)
+    k_values = [k for k in [2, 3, 4, 5] if k < len(df)]
     inertia_list, sil_list = [], []
     for k in k_values:
-        km = KMeans(n_clusters=k, random_state=42, n_init=10, max_iter=300)
-        lbl = km.fit_predict(X_lsa)
-        inertia_list.append(float(km.inertia_))
-        sil_list.append(float(silhouette_score(X_lsa, lbl)))
+        km_eval = KMeans(n_clusters=k, random_state=42, n_init=10, max_iter=300)
+        lbl_eval = km_eval.fit_predict(X_lsa)
+        inertia_list.append(round(float(km_eval.inertia_), 4))
+        sil_list.append(round(float(silhouette_score(X_lsa, lbl_eval)), 4))
 
     best_sil_idx = int(np.argmax(sil_list)) if sil_list else None
 
     rekomendasi_k = {
         "silhouette": {
-            "k": int(k_values[best_sil_idx]) if best_sil_idx is not None else None,
-            "nilai": round(float(sil_list[best_sil_idx]), 4) if best_sil_idx is not None else None,
+            "k":    int(k_values[best_sil_idx]) if best_sil_idx is not None else None,
+            "nilai": sil_list[best_sil_idx] if best_sil_idx is not None else None,
         },
         "dipilih": int(jumlah_cluster),
     }
@@ -704,55 +721,63 @@ def run_clustering(
     create_eval_chart(k_values, inertia_list, sil_list, jumlah_cluster, os.path.join(result_dir, chart_evaluation))
     wordclouds = create_wordclouds(df, result_dir, jumlah_cluster)
 
-    output_cols = [col for col in ["no", "tanggal", "username", komentar_col, "komentar_bersih", "cluster", "label_cluster", "seed_label", "seed_match", "silhouette_sample"] if col in df.columns]
-    csv_output = "hasil_clustering.csv"
+    output_cols = [col for col in [
+        "no", "tanggal", "username", komentar_col,
+        "komentar_bersih", "cluster", "label_cluster",
+        "seed_label", "seed_match", "silhouette_sample"
+    ] if col in df.columns]
+    csv_output   = "hasil_clustering.csv"
     excel_output = "hasil_clustering.xlsx"
     df[output_cols].to_csv(os.path.join(result_dir, csv_output), index=False, encoding="utf-8-sig")
-    df[output_cols].to_excel(os.path.join(result_dir, excel_output), index=False)
+    try:
+        df[output_cols].to_excel(os.path.join(result_dir, excel_output), index=False)
+    except Exception:
+        pass  # openpyxl mungkin tidak tersedia di semua environment
 
     metadata = {
         "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "jumlah_data_awal": int(jumlah_data_awal),
-        "jumlah_tidak_null": int(jumlah_tidak_null),
-        "jumlah_setelah_filter_raw": int(before_clean_filter),
-        "jumlah_setelah_clean_nonempty": int(after_nonempty),
+        "jumlah_data_awal":               int(jumlah_data_awal),
+        "jumlah_tidak_null":              int(jumlah_tidak_null),
+        "jumlah_setelah_filter_raw":      int(before_clean_filter),
+        "jumlah_setelah_clean_nonempty":  int(after_nonempty),
         "jumlah_setelah_min_kata_bersih": int(after_min_clean_words),
-        "jumlah_duplikat_dihapus": int(jumlah_duplikat),
-        "jumlah_data_valid": int(len(df)),
-        "jumlah_cluster": int(jumlah_cluster),
+        "jumlah_duplikat_dihapus":        int(jumlah_duplikat),
+        "jumlah_data_valid":              int(total_valid),
+        "jumlah_cluster":                 int(jumlah_cluster),
         "kolom_komentar": komentar_col,
-        "min_kata_raw": int(min_kata_raw),
+        "min_kata_raw":   int(min_kata_raw),
         "tfidf_shape": [int(X_tfidf.shape[0]), int(X_tfidf.shape[1])],
-        "lsa_shape": [int(X_lsa.shape[0]), int(X_lsa.shape[1])],
+        "lsa_shape":   [int(X_lsa.shape[0]),   int(X_lsa.shape[1])],
         "variansi_lsa": round(var_lsa, 4),
-        "silhouette": round(final_sil, 4),
-        "sastrawi_ok": bool(SASTRAWI_OK),
+        "silhouette":   round(final_sil, 4),
+        "sastrawi_ok":  bool(SASTRAWI_OK),
         "wordcloud_ok": bool(WORDCLOUD_OK),
         "summary": summary,
         "seed_summary": df["seed_match"].value_counts().to_dict(),
         "cluster_quality": [
             {
-                "cluster": item["cluster"],
-                "label": item["label"],
-                "jumlah": item["jumlah"],
-                "silhouette_rata2": item["silhouette_rata2"],
-                "silhouette_min": item["silhouette_min"],
-                "silhouette_max": item["silhouette_max"],
+                "cluster":           item["cluster"],
+                "label":             item["label"],
+                "jumlah":            item["jumlah"],
+                "persen":            item["persen"],
+                "silhouette_rata2":  item["silhouette_rata2"],
+                "silhouette_min":    item["silhouette_min"],
+                "silhouette_max":    item["silhouette_max"],
             }
             for item in summary
         ],
         "evaluation": {
-            "k_values": k_values,
-            "inertia": [round(x, 4) for x in inertia_list],
-            "silhouette": [round(x, 4) for x in sil_list],
+            "k_values":  k_values,
+            "inertia":   inertia_list,
+            "silhouette": sil_list,
             "rekomendasi_k": rekomendasi_k,
         },
         "files": {
-            "csv": csv_output,
-            "excel": excel_output,
+            "csv":               csv_output,
+            "excel":             excel_output,
             "chart_distribution": chart_distribution,
-            "chart_evaluation": chart_evaluation,
-            "wordclouds": wordclouds,
+            "chart_evaluation":  chart_evaluation,
+            "wordclouds":        wordclouds,
         },
         "preview_raw": df_raw.head(10).fillna("").to_dict(orient="records"),
         "preview_preprocessing": df[[komentar_col, "komentar_bersih"]].head(15).fillna("").to_dict(orient="records"),
