@@ -23,15 +23,28 @@
 
 <div class="laporan-container">
 
-  {# ── Kop Surat ── #}
+  {# ── Kop Surat Profesional ── #}
   <div class="laporan-kop">
-    <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo Perusahaan" class="laporan-kop-logo">
+    <img src="{{ url_for('static', filename='logo.png') }}"
+         alt="Logo PT Bank Mandiri" class="laporan-kop-logo"
+         onerror="this.style.display='none'">
     <div class="laporan-kop-text">
       <h2>PT Bank Mandiri (Persero) Tbk</h2>
-      <p>Senayan City, Lantai LGF, No. 07B, Jl. Asia Afrika Lot.19, Gelora, Tanah Abang, Jakarta Pusat</p>
-      <p>www.bankmandiri.co.id</p>
+      <p><strong>Alamat&nbsp;:</strong>
+         Senayan City, Lantai LGF, No. 07B, Jl. Asia Afrika Lot.19,
+         Gelora, Tanah Abang, Jakarta Pusat 10270</p>
+      <p>
+        <strong>Telepon&nbsp;:</strong> (021) 5263000
+        &nbsp;&nbsp;
+        <strong>Email&nbsp;:</strong> corporate.secretary@bankmandiri.co.id
+      </p>
+      <p><strong>Website&nbsp;:</strong> www.bankmandiri.co.id</p>
     </div>
   </div>
+
+  {# Garis pemisah kop dari judul laporan #}
+  <hr class="laporan-kop-divider" style="border-top:2px solid #E2E8F0;margin:0 0 0;">
+
   <div class="laporan-report-title">
     <h3><i class="fa-solid fa-star-half-stroke me-2"></i>Laporan Evaluasi Cluster</h3>
     <p>Pengelompokan Opini Publik TikTok Bank Mandiri &mdash; K-Means Clustering</p>
@@ -167,49 +180,6 @@
   </div>
   {% endif %}
 
-  {# ── Cluster quality per cluster ── #}
-  {% if state.cluster_quality %}
-  <div class="laporan-section">
-    <h3 class="laporan-section-title">
-      <i class="fa-solid fa-list-check"></i> Kualitas per Cluster
-    </h3>
-    <div class="table-responsive" style="border-radius:8px;overflow:hidden;border:2px solid #E2E8F0;box-shadow:none;">
-      <table class="laporan-table">
-        <thead>
-          <tr>
-            <th class="text-center">Cluster</th>
-            <th class="text-center">Jumlah Data</th>
-            <th class="text-center">%</th>
-            <th class="text-center">Silhouette Rata-rata</th>
-            <th class="text-center">Sil. Min</th>
-            <th class="text-center">Sil. Max</th>
-            <th>Label Topik</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% set colors = ['#2563EB','#F97316','#22C55E','#8B5CF6','#EF4444','#EC4899','#14B8A6','#6366F1','#FFE44D','#64748B'] %}
-          {% for item in state.cluster_summary %}
-          {% set ci = item.cluster % 10 %}
-          <tr>
-            <td class="text-center">
-              <span class="badge" style="background:{{ colors[ci] }};color:#fff;border:2px solid #1A1A1A;padding:4px 10px;font-size:12px;">
-                C{{ item.cluster }}
-              </span>
-            </td>
-            <td class="text-center font-monospace fw-bold">{{ item.jumlah }}</td>
-            <td class="text-center font-monospace">{{ "%.2f"|format(item.persen) }}%</td>
-            <td class="text-center font-monospace">{{ "%.4f"|format(item.silhouette_rata2) if item.silhouette_rata2 is not none else '-' }}</td>
-            <td class="text-center font-monospace" style="color:#DC2626;">{{ "%.4f"|format(item.silhouette_min) if item.silhouette_min is not none else '-' }}</td>
-            <td class="text-center font-monospace" style="color:#15803D;">{{ "%.4f"|format(item.silhouette_max) if item.silhouette_max is not none else '-' }}</td>
-            <td><strong>{{ item.label }}</strong></td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
-  {% endif %}
-
   {# ── Tabel perbandingan k ── #}
   {% if state.eval_labels and state.eval_sse %}
   <div class="laporan-section">
@@ -250,6 +220,218 @@
           {% endfor %}
         </tbody>
       </table>
+    </div>
+  </div>
+  {% endif %}
+
+  {# ── Grafik Elbow Method & Silhouette Score ── #}
+  {% if state.eval_labels and state.eval_sse %}
+  <div class="laporan-section">
+    <h3 class="laporan-section-title">
+      <i class="fa-solid fa-chart-line"></i> Visualisasi Evaluasi Clustering
+    </h3>
+    <p style="color:#475569;font-size:13px;margin-bottom:18px;line-height:1.6;">
+      Grafik di bawah dihasilkan dari perhitungan nyata berdasarkan data hasil clustering.
+      Nilai diperbarui otomatis setiap kali proses clustering dijalankan ulang.
+    </p>
+
+    <div class="row g-4">
+
+      {# ── Grafik Elbow Method ── #}
+      <div class="col-lg-6">
+        <div class="custom-card h-100">
+          <div class="card-body">
+
+            {% if state.elbow_chart_b64 %}
+            {# Mode PNG — tombol overlay pojok kanan atas gambar #}
+            <div class="chart-header" style="margin-bottom:10px;">
+              <div>
+                <h5 class="chart-title">Elbow Method (Inertia / SSE)</h5>
+                <p class="chart-subtitle" style="font-size:11px;color:#6B7280;margin:2px 0 0;">
+                  Cari titik "siku" — penurunan inertia yang mulai melambat.
+                </p>
+              </div>
+            </div>
+            <div class="chart-img-wrap">
+              <img id="img-elbow-laporan"
+                   src="data:image/png;base64,{{ state.elbow_chart_b64 }}"
+                   class="img-fluid w-100"
+                   style="border:1px solid #E2E8F0;border-radius:8px;display:block;"
+                   alt="Grafik Elbow Method">
+              <button class="btn-download-chart"
+                      onclick="downloadImg('img-elbow-laporan','elbow-method.png')"
+                      title="Unduh elbow-method.png">
+                <i class="fa-solid fa-download"></i> PNG
+              </button>
+            </div>
+
+            {% else %}
+            {# Mode Canvas Chart.js — tombol di chart-header #}
+            <div class="chart-header">
+              <div>
+                <h5 class="chart-title">Elbow Method (Inertia / SSE)</h5>
+                <p class="chart-subtitle" style="font-size:11px;color:#6B7280;margin:2px 0 0;">
+                  Cari titik "siku" — penurunan inertia yang mulai melambat.
+                </p>
+              </div>
+              <button class="btn-download-chart"
+                      onclick="downloadImg('laporanElbowChart','elbow-method.png')"
+                      title="Unduh elbow-method.png">
+                <i class="fa-solid fa-download"></i> PNG
+              </button>
+            </div>
+            <div class="chart-wrapper" style="height:280px;">
+              <canvas id="laporanElbowChart"></canvas>
+            </div>
+            {% endif %}
+
+          </div>
+        </div>
+      </div>
+
+      {# ── Grafik Silhouette Score ── #}
+      <div class="col-lg-6">
+        <div class="custom-card h-100">
+          <div class="card-body">
+
+            {% if state.silhouette_chart_b64 %}
+            {# Mode PNG — tombol overlay pojok kanan atas gambar #}
+            <div class="chart-header" style="margin-bottom:10px;">
+              <div>
+                <h5 class="chart-title">Silhouette Score per K</h5>
+                <p class="chart-subtitle" style="font-size:11px;color:#6B7280;margin:2px 0 0;">
+                  Nilai lebih tinggi = cluster lebih kompak dan terpisah.
+                </p>
+              </div>
+            </div>
+            <div class="chart-img-wrap">
+              <img id="img-silhouette-laporan"
+                   src="data:image/png;base64,{{ state.silhouette_chart_b64 }}"
+                   class="img-fluid w-100"
+                   style="border:1px solid #E2E8F0;border-radius:8px;display:block;"
+                   alt="Grafik Silhouette Score">
+              <button class="btn-download-chart"
+                      onclick="downloadImg('img-silhouette-laporan','silhouette-score.png')"
+                      title="Unduh silhouette-score.png">
+                <i class="fa-solid fa-download"></i> PNG
+              </button>
+            </div>
+
+            {% else %}
+            {# Mode Canvas Chart.js #}
+            <div class="chart-header">
+              <div>
+                <h5 class="chart-title">Silhouette Score per K</h5>
+                <p class="chart-subtitle" style="font-size:11px;color:#6B7280;margin:2px 0 0;">
+                  Nilai lebih tinggi = cluster lebih kompak dan terpisah.
+                </p>
+              </div>
+              <button class="btn-download-chart"
+                      onclick="downloadImg('laporanSilChart','silhouette-score.png')"
+                      title="Unduh silhouette-score.png">
+                <i class="fa-solid fa-download"></i> PNG
+              </button>
+            </div>
+            <div class="chart-wrapper" style="height:280px;">
+              <canvas id="laporanSilChart"></canvas>
+            </div>
+            {% endif %}
+
+          </div>
+        </div>
+      </div>
+
+    </div>{# end row #}
+
+    {# Legend penanda K ── hanya tampil jika grafik canvas (tidak ada gambar PNG) #}
+    {% if not state.elbow_chart_b64 %}
+    <div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:16px;align-items:center;
+                padding:10px 16px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px;">
+      <span style="font-size:12px;font-weight:700;color:#374151;">Keterangan:</span>
+      <span style="display:flex;align-items:center;gap:6px;font-size:12px;">
+        <span style="display:inline-block;width:20px;height:3px;background:#EF4444;border-radius:2px;
+                     border-top:2px dashed #EF4444;"></span>
+        K dipilih
+      </span>
+      <span style="display:flex;align-items:center;gap:6px;font-size:12px;">
+        <span style="width:10px;height:10px;background:#F97316;border-radius:50%;display:inline-block;"></span>
+        K silhouette terbaik
+      </span>
+    </div>
+    {% endif %}
+
+    <div class="laporan-note" style="margin-top:14px;">
+      <strong><i class="fa-solid fa-circle-info me-1"></i>Panduan Membaca Grafik:</strong>
+      <ul style="margin:8px 0 0 18px;line-height:1.8;font-size:13px;">
+        <li><strong>Elbow Method:</strong> Pilih k di mana garis Inertia mulai "mendatar" (siku kurva). Inertia yang terlalu kecil berarti cluster terlalu banyak dan tidak bermakna.</li>
+        <li><strong>Silhouette Score:</strong> Nilai mendekati 1 = cluster sangat kompak dan terpisah. Nilai 0.1–0.3 masih wajar untuk komentar pendek dan tidak baku di media sosial.</li>
+        <li>Garis merah putus-putus menandai K yang dipilih pada proses clustering terakhir.</li>
+      </ul>
+    </div>
+  </div>
+  {% endif %}
+
+  {# ── Cluster quality per cluster ── #}
+  {# Gunakan cluster_quality (tanpa top_words/samples) — data murni evaluasi statistik #}
+  {% set quality_data = state.cluster_quality if state.cluster_quality else state.cluster_summary %}
+  {% if quality_data %}
+  <div class="laporan-section">
+    <h3 class="laporan-section-title">
+      <i class="fa-solid fa-list-check"></i> Kualitas per Cluster
+    </h3>
+    <p style="color:#475569;font-size:13px;margin-bottom:14px;line-height:1.6;">
+      Nilai Silhouette per cluster menunjukkan seberapa kompak dan terpisah tiap kelompok.
+      Nilai mendekati 1 = cluster sangat kohesif. Nilai negatif = cluster tumpang tindih.
+    </p>
+    <div class="table-responsive" style="border-radius:8px;overflow:hidden;border:2px solid #E2E8F0;box-shadow:none;">
+      <table class="laporan-table">
+        <thead>
+          <tr>
+            <th class="text-center">Cluster</th>
+            <th>Label Topik</th>
+            <th class="text-center">Jumlah Data</th>
+            <th class="text-center">%</th>
+            <th class="text-center">Silhouette Rata-rata</th>
+            <th class="text-center">Sil. Min</th>
+            <th class="text-center">Sil. Max</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% set colors = ['#2563EB','#F97316','#22C55E','#8B5CF6','#EF4444','#EC4899','#14B8A6','#6366F1','#FFE44D','#64748B'] %}
+          {% for item in quality_data %}
+          {% set ci = item.cluster % 10 %}
+          <tr>
+            <td class="text-center">
+              <span class="badge" style="background:{{ colors[ci] }};color:#fff;border:2px solid #1A1A1A;padding:4px 10px;font-size:12px;">
+                C{{ item.cluster }}
+              </span>
+            </td>
+            <td><strong>{{ item.label }}</strong></td>
+            <td class="text-center font-monospace fw-bold">{{ item.jumlah }}</td>
+            <td class="text-center font-monospace">{{ "%.2f"|format(item.persen) }}%</td>
+            <td class="text-center font-monospace fw-bold"
+                style="color:{{ '#15803D' if item.silhouette_rata2 is not none and item.silhouette_rata2 >= 0.3 else ('#D97706' if item.silhouette_rata2 is not none and item.silhouette_rata2 >= 0 else '#DC2626') }};">
+              {{ "%.4f"|format(item.silhouette_rata2) if item.silhouette_rata2 is not none else '-' }}
+            </td>
+            <td class="text-center font-monospace" style="color:#DC2626;">
+              {{ "%.4f"|format(item.silhouette_min) if item.silhouette_min is not none else '-' }}
+            </td>
+            <td class="text-center font-monospace" style="color:#15803D;">
+              {{ "%.4f"|format(item.silhouette_max) if item.silhouette_max is not none else '-' }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="laporan-note" style="margin-top:10px;">
+      <strong>Skala:</strong>
+      <span style="color:#15803D;font-weight:700;">≥ 0.30</span> = Baik &nbsp;|&nbsp;
+      <span style="color:#D97706;font-weight:700;">0.00 – 0.29</span> = Cukup &nbsp;|&nbsp;
+      <span style="color:#DC2626;font-weight:700;">&lt; 0.00</span> = Cluster tumpang tindih.
+      Kata kunci dan distribusi topik tersedia di
+      <a href="{{ url_for('laporan_interpretasi') }}" style="color:var(--nb-blue);font-weight:700;">Laporan Interpretasi</a> dan
+      <a href="{{ url_for('laporan_visualisasi') }}" style="color:var(--nb-blue);font-weight:700;">Laporan Visualisasi</a>.
     </div>
   </div>
   {% endif %}
@@ -301,10 +483,90 @@
     </div>
     <div class="laporan-signature-right">
       <p class="sig-greeting">Mengetahui,</p>
-      <p class="sig-name">Rahmad Supandi</p>
-      <p class="sig-title">Direktur</p>
+      <p class="sig-name">Gilang Afandi Harahap</p>
+      <p class="sig-title">Pimpinan</p>
     </div>
   </div>
 
 </div>
+{% endblock %}
+
+{% block scripts %}
+{% if state.eval_labels and state.eval_sse and not state.elbow_chart_b64 %}
+<script>
+(function () {
+  const eL   = {{ state.eval_labels|tojson }};
+  const eS   = {{ state.eval_sse|tojson }};
+  const eSil = {{ state.eval_silhouette|tojson }};
+  const kDipilih = {{ state.k }};
+  const CC_BLUE  = '#2563EB';
+  const CC_GREEN = '#22C55E';
+  const CC_RED   = '#EF4444';
+
+  // Elbow chart
+  new Chart(document.getElementById('laporanElbowChart'), {
+    type: 'line',
+    data: {
+      labels: eL,
+      datasets: [{
+        label: 'Inertia / SSE',
+        data: eS,
+        borderColor: CC_BLUE, backgroundColor: CC_BLUE + '22',
+        borderWidth: 3, tension: 0.3, pointRadius: 7, fill: true,
+        pointBackgroundColor: eL.map(l => l === 'K=' + kDipilih ? CC_RED : '#fff'),
+        pointBorderColor: eL.map(l => l === 'K=' + kDipilih ? CC_RED : CC_BLUE),
+        pointBorderWidth: 2.5, pointHoverRadius: 9,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: true, labels: { font: { size: 12 }, color: '#374151' } },
+        tooltip: { callbacks: {
+          label: ctx => `Inertia: ${ctx.parsed.y.toLocaleString('id-ID')}`
+        }}
+      },
+      scales: {
+        x: { title: { display: true, text: 'Jumlah Cluster (k)', font: { weight: '700', size: 12 }, color: '#4B5563' },
+             grid: { color: '#E5E7EB' }, ticks: { color: '#374151', font: { weight: '700' } } },
+        y: { title: { display: true, text: 'Inertia / SSE', font: { weight: '700', size: 12 }, color: '#4B5563' },
+             grid: { color: '#E5E7EB' }, ticks: { color: '#374151' } }
+      }
+    }
+  });
+
+  // Silhouette chart
+  new Chart(document.getElementById('laporanSilChart'), {
+    type: 'line',
+    data: {
+      labels: eL,
+      datasets: [{
+        label: 'Silhouette Score',
+        data: eSil,
+        borderColor: CC_GREEN, backgroundColor: CC_GREEN + '22',
+        borderWidth: 3, tension: 0.3, pointRadius: 7, fill: true,
+        pointBackgroundColor: eL.map(l => l === 'K=' + kDipilih ? CC_RED : '#fff'),
+        pointBorderColor: eL.map(l => l === 'K=' + kDipilih ? CC_RED : CC_GREEN),
+        pointBorderWidth: 2.5, pointHoverRadius: 9,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: true, labels: { font: { size: 12 }, color: '#374151' } },
+        tooltip: { callbacks: {
+          label: ctx => `Silhouette: ${ctx.parsed.y.toFixed(4)}`
+        }}
+      },
+      scales: {
+        x: { title: { display: true, text: 'Jumlah Cluster (k)', font: { weight: '700', size: 12 }, color: '#4B5563' },
+             grid: { color: '#E5E7EB' }, ticks: { color: '#374151', font: { weight: '700' } } },
+        y: { title: { display: true, text: 'Silhouette Score', font: { weight: '700', size: 12 }, color: '#4B5563' },
+             grid: { color: '#E5E7EB' }, ticks: { color: '#374151' } }
+      }
+    }
+  });
+}());
+</script>
+{% endif %}
 {% endblock %}

@@ -24,15 +24,25 @@
 
 <div class="laporan-container">
 
-  {# ── Kop Surat ── #}
+  {# ── Kop Surat Profesional ── #}
   <div class="laporan-kop">
-    <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo Perusahaan" class="laporan-kop-logo">
+    <img src="{{ url_for('static', filename='logo.png') }}"
+         alt="Logo PT Bank Mandiri" class="laporan-kop-logo"
+         onerror="this.style.display='none'">
     <div class="laporan-kop-text">
       <h2>PT Bank Mandiri (Persero) Tbk</h2>
-      <p>Senayan City, Lantai LGF, No. 07B, Jl. Asia Afrika Lot.19, Gelora, Tanah Abang, Jakarta Pusat</p>
-      <p>www.bankmandiri.co.id</p>
+      <p><strong>Alamat&nbsp;:</strong>
+         Senayan City, Lantai LGF, No. 07B, Jl. Asia Afrika Lot.19,
+         Gelora, Tanah Abang, Jakarta Pusat 10270</p>
+      <p>
+        <strong>Telepon&nbsp;:</strong> (021) 5263000
+        &nbsp;&nbsp;
+        <strong>Email&nbsp;:</strong> corporate.secretary@bankmandiri.co.id
+      </p>
+      <p><strong>Website&nbsp;:</strong> www.bankmandiri.co.id</p>
     </div>
   </div>
+  <hr class="laporan-kop-divider" style="border-top:2px solid #E2E8F0;margin:0 0 0;">
   <div class="laporan-report-title">
     <h3><i class="fa-solid fa-table-list me-2"></i>Laporan Hasil Clustering</h3>
     <p>Pengelompokan Opini Publik TikTok Bank Mandiri &mdash; K-Means Clustering</p>
@@ -45,11 +55,11 @@
       <span class="meta-value">{{ state.metrics.total_data }}</span>
     </div>
     <div class="laporan-meta-item">
-      <span class="meta-label">Jumlah Cluster</span>
+      <span class="meta-label">Jumlah Cluster (K)</span>
       <span class="meta-value">{{ state.metrics.jumlah_cluster }}</span>
     </div>
     <div class="laporan-meta-item">
-      <span class="meta-label">Ditampilkan</span>
+      <span class="meta-label">Data Ditampilkan</span>
       <span class="meta-value">{{ total_filtered }}</span>
     </div>
     <div class="laporan-meta-item">
@@ -65,27 +75,41 @@
   </div>
   {% endif %}
 
-  {# ── Ringkasan cluster ── #}
-  {% if state.cluster_summary %}
+  {# Ringkasan distribusi cluster dihapus dari Laporan Hasil —
+     data distribusi tersedia di Laporan Visualisasi.
+     Di sini hanya ditampilkan info total data hasil clustering. #}
+  {% if state.metrics %}
   <div class="laporan-section">
     <h3 class="laporan-section-title">
-      <i class="fa-solid fa-chart-pie"></i> Ringkasan Distribusi Cluster
+      <i class="fa-solid fa-circle-info"></i> Informasi Hasil Clustering
     </h3>
-    <div class="laporan-metrics">
-      {% set colors = ['#2563EB','#F97316','#22C55E','#8B5CF6','#EF4444','#EC4899','#14B8A6','#6366F1','#FFE44D','#64748B'] %}
-      {% for item in state.cluster_summary %}
-      {% set ci = item.cluster % 10 %}
-      <div class="laporan-metric-tile" style="border-top:4px solid {{ colors[ci] }};">
-        <span class="tile-label">
-          <span class="badge" style="background:{{ colors[ci] }};color:#fff;border:1.5px solid #1A1A1A;
-                font-size:10px;padding:2px 7px;margin-right:4px;">C{{ item.cluster }}</span>
-          {{ item.label | truncate(22, true, '…') }}
-        </span>
-        <span class="tile-value">{{ item.jumlah }}
-          <small style="font-size:13px;font-weight:600;color:#64748B;">({{ "%.2f"|format(item.persen) }}%)</small>
-        </span>
+    <div style="background:#EFF6FF;border:1.5px solid #BFDBFE;border-radius:8px;
+                padding:16px 20px;display:flex;flex-wrap:wrap;gap:24px;align-items:center;">
+      <div>
+        <span style="font-size:11px;font-weight:700;color:#3B82F6;text-transform:uppercase;
+                     letter-spacing:.4px;display:block;margin-bottom:4px;">Total Data Valid</span>
+        <span style="font-size:22px;font-weight:800;color:#1E293B;">{{ state.metrics.total_data }}</span>
       </div>
-      {% endfor %}
+      <div>
+        <span style="font-size:11px;font-weight:700;color:#3B82F6;text-transform:uppercase;
+                     letter-spacing:.4px;display:block;margin-bottom:4px;">Jumlah Cluster (K)</span>
+        <span style="font-size:22px;font-weight:800;color:#1E293B;">{{ state.metrics.jumlah_cluster }}</span>
+      </div>
+      <div>
+        <span style="font-size:11px;font-weight:700;color:#3B82F6;text-transform:uppercase;
+                     letter-spacing:.4px;display:block;margin-bottom:4px;">Ditampilkan</span>
+        <span style="font-size:22px;font-weight:800;color:#1E293B;">{{ total_filtered }}</span>
+      </div>
+      <div style="margin-left:auto;display:flex;flex-direction:column;gap:6px;">
+        <a href="{{ url_for('laporan_visualisasi') }}"
+           style="font-size:12px;color:#2563EB;font-weight:600;text-decoration:none;">
+          <i class="fa-solid fa-chart-bar me-1"></i>Lihat distribusi cluster →
+        </a>
+        <a href="{{ url_for('laporan_evaluasi') }}"
+           style="font-size:12px;color:#2563EB;font-weight:600;text-decoration:none;">
+          <i class="fa-solid fa-star-half-stroke me-1"></i>Lihat metrik evaluasi →
+        </a>
+      </div>
     </div>
   </div>
   {% endif %}
@@ -141,24 +165,48 @@
     {% if preview %}
     {% set colors    = ['#2563EB','#F97316','#22C55E','#8B5CF6','#EF4444','#EC4899','#14B8A6','#6366F1','#FFE44D','#64748B'] %}
     {% set bg_colors = ['#DBEAFE','#FFEDD5','#DCFCE7','#F3E8FF','#FEE2E2','#FCE7F3','#CCFBF1','#E0E7FF','#FEF9C3','#F1F5F9'] %}
-    <div class="table-responsive" style="border-radius:8px;overflow:hidden;border:2px solid #E2E8F0;box-shadow:none;">
-      <table class="laporan-table" id="tbl-laporan-hasil">
+    {# Lebar minimum tabel agar scroll horizontal aktif di layar sempit #}
+    <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;
+                border-radius:8px;border:2px solid #E2E8F0;">
+      <table class="laporan-table" id="tbl-laporan-hasil"
+             style="width:100%;min-width:920px;table-layout:fixed;">
+        {# Kolom yang dikecualikan dari Laporan Hasil:
+           - silhouette_sample : metrik evaluasi, hanya tampil di Laporan Evaluasi
+           - komentar_bersih   : token preprocessing, bukan data hasil clustering #}
+        {% set exclude_cols = ['silhouette_sample', 'komentar_bersih'] %}
+        {# Lebar kolom proporsional — total 100% dari min-width 860px #}
+        <colgroup>
+          {% for col in preview[0].keys() %}
+          {% if col not in exclude_cols %}
+            {% if col == 'no' %}<col style="width:44px;">
+            {% elif col == 'tanggal' %}<col style="width:96px;">
+            {% elif col == 'username' %}<col style="width:120px;">
+            {% elif col == 'komentar' %}<col style="width:auto;">
+            {% elif col == 'cluster' %}<col style="width:72px;">
+            {% elif col == 'label_cluster' %}<col style="width:160px;">
+            {% elif col == 'seed_label' %}<col style="width:64px;">
+            {% elif col == 'seed_match' %}<col style="width:150px;min-width:150px;">
+            {% else %}<col style="width:100px;">
+            {% endif %}
+          {% endif %}
+          {% endfor %}
+        </colgroup>
         <thead>
           <tr>
             {% for col in preview[0].keys() %}
-            <th>
+            {% if col not in exclude_cols %}
+            <th style="white-space:nowrap;">
               {%- if col == 'no' %}No
               {%- elif col == 'tanggal' %}Tanggal
               {%- elif col == 'username' %}Username
               {%- elif col == 'komentar' %}Komentar Asli
-              {%- elif col == 'komentar_bersih' %}Komentar Bersih
               {%- elif col == 'cluster' %}Cluster
               {%- elif col == 'label_cluster' %}Topik
               {%- elif col == 'seed_label' %}Seed
               {%- elif col == 'seed_match' %}Kesesuaian
-              {%- elif col == 'silhouette_sample' %}Silhouette
               {%- else %}{{ col | capitalize }}{%- endif %}
             </th>
+            {% endif %}
             {% endfor %}
           </tr>
         </thead>
@@ -166,7 +214,16 @@
           {% for row in preview %}
           <tr>
             {% for key, value in row.items() %}
-            <td>
+            {% if key not in exclude_cols %}
+            <td style="
+              {%- if key == 'no' %}text-align:center;
+              {%- elif key == 'cluster' %}text-align:center;
+              {%- elif key == 'seed_label' %}text-align:center;
+              {%- elif key == 'seed_match' %}text-align:center;min-width:150px;
+              {%- elif key == 'username' %}word-break:break-all;overflow-wrap:anywhere;
+              {%- elif key == 'komentar' %}word-break:break-word;overflow-wrap:break-word;
+              {%- elif key == 'label_cluster' %}word-break:break-word;
+              {%- else %}{% endif %}">
               {%- if key == 'cluster' %}
                 <span class="badge"
                       style="background:{{ colors[value|int % 10] }};color:#fff;
@@ -177,28 +234,22 @@
                 <span style="background:{{ bg_colors[row.cluster|int % 10] }};
                              color:var(--nb-black);border:1.5px solid #CBD5E1;
                              border-radius:6px;padding:3px 9px;font-size:12px;
-                             font-weight:700;display:inline-block;">
+                             font-weight:700;display:inline-block;line-height:1.4;">
                   {{ value }}
-                </span>
-              {%- elif key == 'silhouette_sample' %}
-                <span class="font-monospace fw-bold"
-                      style="color:{{ '#15803D' if value|float >= 0 else '#DC2626' }};">
-                  {{ "%.4f"|format(value|float) if value is not none and value != '' else '-' }}
                 </span>
               {%- elif key == 'seed_match' %}
                 <span class="badge"
-                  {%- if value == 'Cocok' %} style="background:#22C55E;color:#1A1A1A;border:1.5px solid #1A1A1A;"
-                  {%- elif value == 'Beda dari seed' %} style="background:#FFE44D;color:#1A1A1A;border:1.5px solid #1A1A1A;"
-                  {%- else %} style="background:#F1F5F9;color:#475569;border:1.5px solid #CBD5E1;"
+                  {%- if value == 'Cocok' %} style="background:#22C55E;color:#1A1A1A;border:1.5px solid #1A1A1A;white-space:nowrap;padding:5px 12px;font-size:12px;"
+                  {%- elif value == 'Beda dari seed' %} style="background:#FFE44D;color:#1A1A1A;border:1.5px solid #1A1A1A;white-space:nowrap;padding:5px 12px;font-size:12px;"
+                  {%- else %} style="background:#F1F5F9;color:#475569;border:1.5px solid #CBD5E1;white-space:nowrap;padding:5px 12px;font-size:12px;"
                   {%- endif %}>{{ value }}</span>
               {%- elif key == 'seed_label' %}
                 <span class="font-monospace" style="color:#6B7280;font-size:12px;">
                   {{ 'Tidak ada' if value == -1 else 'C' ~ value }}
                 </span>
-              {%- elif key == 'komentar_bersih' %}
-                <span class="font-monospace" style="color:#1D4ED8;font-size:12px;">{{ value }}</span>
               {%- else %}{{ value }}{%- endif %}
             </td>
+            {% endif %}
             {% endfor %}
           </tr>
           {% endfor %}
@@ -222,25 +273,8 @@
     {% endif %}
   </div>
 
-  {# ── Export note ── #}
-  {% if preview %}
-  <div class="laporan-section" style="margin-bottom:0;">
-    <h3 class="laporan-section-title">
-      <i class="fa-solid fa-file-export"></i> Ekspor Data
-    </h3>
-    <div class="d-flex flex-wrap gap-3 align-items-center">
-      <a href="{{ url_for('download') }}" class="btn btn-success">
-        <i class="fa-solid fa-download me-2"></i>Download CSV Lengkap
-      </a>
-      <span style="color:#64748B;font-size:13px;">
-        Format CSV dapat dibuka di Microsoft Excel atau Google Sheets.
-      </span>
-    </div>
-  </div>
-  {% endif %}
-
   {# ── No data fallback ── #}
-  {% if not state.result_df is not none and not preview %}
+  {% if not state.metrics and not preview %}
   <div class="alert alert-warning mt-4">
     <i class="fa-solid fa-triangle-exclamation me-2"></i>
     Belum ada data hasil clustering. <a href="{{ url_for('clustering') }}" class="fw-bold" style="color:var(--nb-black);">Jalankan clustering terlebih dahulu.</a>
@@ -254,8 +288,8 @@
     </div>
     <div class="laporan-signature-right">
       <p class="sig-greeting">Mengetahui,</p>
-      <p class="sig-name">Rahmad Supandi</p>
-      <p class="sig-title">Direktur</p>
+      <p class="sig-name">Gilang Afandi Harahap</p>
+      <p class="sig-title">Pimpinan</p>
     </div>
   </div>
 

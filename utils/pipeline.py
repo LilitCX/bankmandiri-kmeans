@@ -455,26 +455,203 @@ def create_bar_chart(summary, output_path):
     for bar, count in zip(bars, counts):
         plt.text(bar.get_x() + bar.get_width() / 2, bar.get_height(), str(count), ha="center", va="bottom")
     plt.tight_layout()
-    plt.savefig(output_path, dpi=140, bbox_inches="tight")
+    plt.savefig(output_path, dpi=180, bbox_inches="tight")
     plt.close()
 
 
 def create_eval_chart(k_values, inertia, sil, selected_k, output_path):
-    # Dua grafik: Elbow/Inertia dan Silhouette Score
-    fig, axes = plt.subplots(1, 2, figsize=(11, 4.5))
-    series = [
-        (inertia, "Elbow / Inertia", "Inertia"),
-        (sil,     "Silhouette Score", "Score"),
-    ]
-    for ax, (data, title, ylabel) in zip(axes, series):
-        ax.plot(k_values, data, marker="o")
-        ax.axvline(selected_k, linestyle="--")
-        ax.set_title(title)
-        ax.set_xlabel("Jumlah Cluster (k)")
-        ax.set_ylabel(ylabel)
-        ax.grid(True, alpha=0.3)
+    """Buat grafik gabungan Elbow Method + Silhouette Score ke satu file PNG.
+
+    Setiap subplot memiliki:
+    - Judul, label sumbu X dan Y
+    - Legend (garis utama + penanda K dipilih + K silhouette terbaik)
+    - Anotasi nilai di setiap titik
+    - Garis putus-putus merah untuk K yang dipilih
+
+    Grafik terpisah juga disimpan untuk keperluan embed halaman dan download.
+    """
+    PALETTE = {"elbow": "#2563EB", "sil": "#22C55E", "selected": "#EF4444"}
+
+    fig, axes = plt.subplots(1, 2, figsize=(13, 5))
+
+    # ── Elbow / Inertia ─────────────────────────────────────────────────
+    ax = axes[0]
+    ax.plot(k_values, inertia,
+            marker="o", color=PALETTE["elbow"], linewidth=2.5,
+            markersize=8, markerfacecolor="#fff",
+            markeredgecolor=PALETTE["elbow"], markeredgewidth=2,
+            label="Inertia / SSE")
+    if selected_k in k_values:
+        idx = k_values.index(selected_k)
+        ax.plot(selected_k, inertia[idx],
+                marker="o", color=PALETTE["selected"],
+                markersize=13, zorder=5, label=f"K={selected_k} (dipilih)")
+        ax.axvline(selected_k, linestyle="--", color=PALETTE["selected"],
+                   linewidth=1.5, alpha=0.7)
+    for k, v in zip(k_values, inertia):
+        ax.annotate(f"{v:,.1f}", xy=(k, v), xytext=(0, 10),
+                    textcoords="offset points", ha="center", fontsize=8.5,
+                    color="#374151")
+    ax.set_title("Elbow Method (Inertia / SSE)", fontsize=13, fontweight="bold", pad=10)
+    ax.set_xlabel("Jumlah Cluster (k)", fontsize=11, labelpad=6)
+    ax.set_ylabel("Inertia / SSE", fontsize=11, labelpad=6)
+    ax.set_xticks(k_values)
+    ax.grid(True, alpha=0.3, linestyle="--")
+    ax.legend(fontsize=9, loc="upper right", framealpha=0.9)
+    ax.spines[["top", "right"]].set_visible(False)
+
+    # ── Silhouette Score ─────────────────────────────────────────────────
+    ax = axes[1]
+    ax.plot(k_values, sil,
+            marker="s", color=PALETTE["sil"], linewidth=2.5,
+            markersize=8, markerfacecolor="#fff",
+            markeredgecolor=PALETTE["sil"], markeredgewidth=2,
+            label="Silhouette Score")
+    if selected_k in k_values:
+        idx = k_values.index(selected_k)
+        ax.plot(selected_k, sil[idx],
+                marker="s", color=PALETTE["selected"],
+                markersize=13, zorder=5, label=f"K={selected_k} (dipilih)")
+        ax.axvline(selected_k, linestyle="--", color=PALETTE["selected"],
+                   linewidth=1.5, alpha=0.7)
+    best_sil_k = k_values[int(np.argmax(sil))] if sil else None
+    if best_sil_k and best_sil_k != selected_k:
+        idx_b = k_values.index(best_sil_k)
+        ax.plot(best_sil_k, sil[idx_b],
+                marker="*", color="#F97316",
+                markersize=16, zorder=4, label=f"K={best_sil_k} (terbaik)")
+    for k, v in zip(k_values, sil):
+        ax.annotate(f"{v:.4f}", xy=(k, v), xytext=(0, 10),
+                    textcoords="offset points", ha="center", fontsize=8.5,
+                    color="#374151")
+    ax.set_title("Silhouette Score per K", fontsize=13, fontweight="bold", pad=10)
+    ax.set_xlabel("Jumlah Cluster (k)", fontsize=11, labelpad=6)
+    ax.set_ylabel("Silhouette Score", fontsize=11, labelpad=6)
+    ax.set_xticks(k_values)
+    ax.grid(True, alpha=0.3, linestyle="--")
+    ax.legend(fontsize=9, loc="upper right", framealpha=0.9)
+    ax.spines[["top", "right"]].set_visible(False)
+
+    fig.suptitle("Evaluasi Clustering — Elbow Method & Silhouette Score",
+                 fontsize=14, fontweight="bold", y=1.02)
     plt.tight_layout()
-    plt.savefig(output_path, dpi=140, bbox_inches="tight")
+    plt.savefig(output_path, dpi=180, bbox_inches="tight")
+    plt.close()
+
+    # Simpan juga grafik terpisah untuk keperluan download
+    base_dir = os.path.dirname(output_path)
+    _create_single_chart_elbow(k_values, inertia, selected_k,
+                               os.path.join(base_dir, "elbow_method.png"), PALETTE)
+    _create_single_chart_silhouette(k_values, sil, selected_k,
+                                    os.path.join(base_dir, "silhouette_score.png"), PALETTE)
+
+
+def _create_single_chart_elbow(k_values, inertia, selected_k, output_path, palette):
+    """Simpan grafik Elbow Method saja sebagai file PNG terpisah.
+
+    Elemen grafik:
+    - Judul: "Elbow Method (Inertia / SSE)"
+    - Sumbu X: "Jumlah Cluster (k)"
+    - Sumbu Y: "Inertia / SSE"
+    - Legend: garis kurva + titik K dipilih
+    - Data label di setiap titik
+    - Garis putus-putus merah untuk K dipilih
+    """
+    fig, ax = plt.subplots(figsize=(8, 5))
+
+    # Garis utama — Inertia per k
+    ax.plot(k_values, inertia,
+            marker="o", color=palette["elbow"], linewidth=2.5,
+            markersize=9, markerfacecolor="#fff",
+            markeredgecolor=palette["elbow"], markeredgewidth=2.5,
+            label="Inertia / SSE")
+
+    # Tandai K yang dipilih
+    if selected_k in k_values:
+        idx = k_values.index(selected_k)
+        ax.plot(selected_k, inertia[idx],
+                marker="o", color=palette["selected"],
+                markersize=14, zorder=5,
+                label=f"K={selected_k} (dipilih)")
+        ax.axvline(selected_k, linestyle="--", color=palette["selected"],
+                   linewidth=1.5, alpha=0.8)
+
+    # Anotasi nilai di setiap titik
+    for k, v in zip(k_values, inertia):
+        ax.annotate(
+            f"{v:,.1f}",
+            xy=(k, v), xytext=(0, 10), textcoords="offset points",
+            ha="center", va="bottom", fontsize=9, color="#374151",
+        )
+
+    ax.set_title("Elbow Method (Inertia / SSE)", fontsize=14, fontweight="bold", pad=12)
+    ax.set_xlabel("Jumlah Cluster (k)", fontsize=12, labelpad=8)
+    ax.set_ylabel("Inertia / SSE", fontsize=12, labelpad=8)
+    ax.set_xticks(k_values)
+    ax.grid(True, alpha=0.35, linestyle="--")
+    ax.legend(fontsize=10, loc="upper right", framealpha=0.9)
+    ax.spines[["top", "right"]].set_visible(False)
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=180, bbox_inches="tight")
+    plt.close()
+
+
+def _create_single_chart_silhouette(k_values, sil, selected_k, output_path, palette):
+    """Simpan grafik Silhouette Score saja sebagai file PNG terpisah.
+
+    Elemen grafik:
+    - Judul: "Silhouette Score per K"
+    - Sumbu X: "Jumlah Cluster (k)"
+    - Sumbu Y: "Silhouette Score"
+    - Legend: garis kurva + K dipilih + K silhouette terbaik (jika berbeda)
+    - Data label di setiap titik
+    - Garis putus-putus merah untuk K dipilih
+    """
+    fig, ax = plt.subplots(figsize=(8, 5))
+
+    # Garis utama — Silhouette per k
+    ax.plot(k_values, sil,
+            marker="s", color=palette["sil"], linewidth=2.5,
+            markersize=9, markerfacecolor="#fff",
+            markeredgecolor=palette["sil"], markeredgewidth=2.5,
+            label="Silhouette Score")
+
+    # Tandai K yang dipilih
+    if selected_k in k_values:
+        idx = k_values.index(selected_k)
+        ax.plot(selected_k, sil[idx],
+                marker="s", color=palette["selected"],
+                markersize=14, zorder=5,
+                label=f"K={selected_k} (dipilih)")
+        ax.axvline(selected_k, linestyle="--", color=palette["selected"],
+                   linewidth=1.5, alpha=0.8)
+
+    # Tandai K dengan silhouette tertinggi (jika berbeda dari K dipilih)
+    best_sil_k = k_values[int(np.argmax(sil))] if sil else None
+    if best_sil_k and best_sil_k != selected_k:
+        idx_b = k_values.index(best_sil_k)
+        ax.plot(best_sil_k, sil[idx_b],
+                marker="*", color="#F97316",
+                markersize=18, zorder=4,
+                label=f"K={best_sil_k} (silhouette terbaik)")
+
+    # Anotasi nilai di setiap titik
+    for k, v in zip(k_values, sil):
+        ax.annotate(
+            f"{v:.4f}",
+            xy=(k, v), xytext=(0, 10), textcoords="offset points",
+            ha="center", va="bottom", fontsize=9, color="#374151",
+        )
+
+    ax.set_title("Silhouette Score per K", fontsize=14, fontweight="bold", pad=12)
+    ax.set_xlabel("Jumlah Cluster (k)", fontsize=12, labelpad=8)
+    ax.set_ylabel("Silhouette Score", fontsize=12, labelpad=8)
+    ax.set_xticks(k_values)
+    ax.grid(True, alpha=0.35, linestyle="--")
+    ax.legend(fontsize=10, loc="upper right", framealpha=0.9)
+    ax.spines[["top", "right"]].set_visible(False)
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=180, bbox_inches="tight")
     plt.close()
 
 
@@ -495,11 +672,11 @@ def create_wordclouds(df, result_dir, jumlah_cluster):
             ).generate(text)
             filename = f"wordcloud_cluster_{c}.png"
             output_path = os.path.join(result_dir, filename)
-            plt.figure(figsize=(9, 4.5))
+            plt.figure(figsize=(10, 5))
             plt.imshow(wc, interpolation="bilinear")
             plt.axis("off")
-            plt.tight_layout()
-            plt.savefig(output_path, dpi=140, bbox_inches="tight")
+            plt.tight_layout(pad=0)
+            plt.savefig(output_path, dpi=180, bbox_inches="tight", pad_inches=0)
             plt.close("all")
             paths[str(c)] = filename
         except Exception as exc:
@@ -605,7 +782,11 @@ def run_clustering(
         for c in range(jumlah_cluster):
             mask = df["seed_label"] == c
             if mask.sum() > 0:
-                initial_centroids[c] = X_lsa[mask.values].mean(axis=0)
+                # Gunakan .to_numpy() agar konversi dari pandas Series ke numpy
+                # boolean array selalu eksplisit dan konsisten di semua versi
+                # numpy/pandas — menghindari potensi DeprecationWarning atau
+                # perilaku ambigu pada versi mendatang.
+                initial_centroids[c] = X_lsa[mask.to_numpy()].mean(axis=0)
             else:
                 initial_centroids[c] = X_lsa[rng.integers(0, len(X_lsa))].copy()
         kmeans = KMeans(n_clusters=jumlah_cluster, init=initial_centroids, n_init=1, max_iter=500, random_state=42)
@@ -616,17 +797,33 @@ def run_clustering(
     df["x_lsa"] = X_lsa[:, 0]
     df["y_lsa"] = X_lsa[:, 1] if X_lsa.shape[1] > 1 else 0.0
 
-    # Proyeksi t-SNE untuk scatter plot yang lebih baik
+    # ── t-SNE: hanya untuk scatter plot — TIDAK mempengaruhi assignment cluster.
+    # Cluster assignment sudah final dari kmeans.fit_predict(X_lsa) di atas.
+    # t-SNE dijalankan setelah assignment sehingga hasilnya murni visualisasi.
+    # random_state=42 + init="pca" memastikan proyeksi deterministik.
     try:
         perplexity_val = min(30, max(5, len(df) // 5))
-        tsne = TSNE(
-            n_components=2,
-            perplexity=perplexity_val,
-            random_state=42,
-            n_iter=1000,
-            learning_rate="auto",
-            init="pca",
-        )
+        # Gunakan max_iter (nama baru sklearn >= 1.2) dengan fallback ke n_iter
+        # agar kompatibel lintas versi sklearn tanpa DeprecationWarning.
+        try:
+            tsne = TSNE(
+                n_components=2,
+                perplexity=perplexity_val,
+                random_state=42,
+                max_iter=1000,
+                learning_rate="auto",
+                init="pca",
+            )
+        except TypeError:
+            # sklearn < 1.2 belum mengenal max_iter, fallback ke n_iter
+            tsne = TSNE(
+                n_components=2,
+                perplexity=perplexity_val,
+                random_state=42,
+                n_iter=1000,
+                learning_rate="auto",
+                init="pca",
+            )
         X_tsne = tsne.fit_transform(X_lsa)
         df["x_tsne"] = X_tsne[:, 0]
         df["y_tsne"] = X_tsne[:, 1]
@@ -635,16 +832,37 @@ def run_clustering(
         df["x_tsne"] = df["x_lsa"]
         df["y_tsne"] = df["y_lsa"]
         use_tsne = False
+
+    # Silhouette dihitung terhadap X_lsa (ruang LSA yang sudah ternormalisasi)
+    # dan label cluster yang sudah final — bukan terhadap koordinat t-SNE.
     final_sil = float(silhouette_score(X_lsa, df["cluster"]))
     df["silhouette_sample"] = silhouette_samples(X_lsa, df["cluster"])
 
     terms = vectorizer.get_feature_names_out()
     n_tfidf = X_tfidf.shape[1]
 
-    # Top-words: gunakan centroid di ruang LSA lalu inverse-transform ke ruang TF-IDF
-    # agar kata-kata yang dipilih benar-benar mencerminkan isi cluster
-    centroids_lsa = kmeans.cluster_centers_                     # shape (k, n_lsa)
-    centroids_tfidf = svd.inverse_transform(centroids_lsa)[:, :n_tfidf]  # shape (k, n_tfidf)
+    # ── Top-words per cluster: rekonstruksi centroid ke ruang TF-IDF ──────────
+    #
+    # Pipeline LSA: X_gabungan -[TruncatedSVD]-> X_svd -[Normalizer]-> X_lsa
+    #
+    # kmeans.cluster_centers_ (centroids_lsa) berada di ruang X_lsa,
+    # yaitu SETELAH normalisasi L2 — bukan di ruang keluaran SVD mentah.
+    #
+    # svd.inverse_transform(v) secara internal menghitung v @ svd.components_,
+    # namun ia mengharapkan v berada di ruang *latent SVD* (pre-Normalizer).
+    # Memberikan centroid yang sudah ternormalisasi ke inverse_transform akan
+    # menghasilkan bobot term yang salah karena skala vektornya berbeda.
+    #
+    # Cara yang benar adalah menggunakan svd.components_ secara langsung:
+    #   centroids_lsa @ svd.components_   →  shape (k, n_gabungan)
+    # Ini adalah dot-product antara koordinat latent centroid dengan basis SVD
+    # (baris = komponen, kolom = fitur asli), menghasilkan proyeksi balik yang
+    # tepat ke ruang X_gabungan tanpa asumsi skala apapun.
+    # Kemudian ambil n_tfidf kolom pertama yang berkorespondensi dengan fitur
+    # TF-IDF (kolom fitur_topik ada di posisi n_tfidf..n_tfidf+5).
+    #
+    centroids_lsa = kmeans.cluster_centers_                           # (k, n_lsa)
+    centroids_tfidf = centroids_lsa @ svd.components_[:, :n_tfidf]   # (k, n_tfidf)
 
     # Buat label dinamis per cluster berdasarkan top_words & RULES
     labels = {}
@@ -696,14 +914,29 @@ def run_clustering(
             "samples": samples,
         })
 
-    # Evaluasi hanya untuk k = 2, 3, 4, 5 (sesuai pilihan yang tersedia di UI)
-    k_values = [k for k in [2, 3, 4, 5] if k < len(df)]
+    # ── Evaluasi komparatif untuk k = 2, 3, 4, 5 ────────────────────────────
+    # Tujuan: menampilkan kurva Elbow & Silhouette sebagai panduan pemilihan k.
+    # Semua k dievaluasi dengan kondisi yang seragam (k-means++, n_init=10,
+    # max_iter=500, random_state=42) agar perbandingan antar k adil dan
+    # reproducible — terpisah dari clustering utama yang bisa menggunakan
+    # seed custom untuk k=5.
+    # Pastikan jumlah_cluster yang dipilih selalu masuk ke evaluasi agar
+    # grafik selalu menampilkan titik untuk k yang digunakan.
+    eval_k_candidates = sorted(set([2, 3, 4, 5] + [jumlah_cluster]))
+    k_values = [k for k in eval_k_candidates if k < len(df)]
     inertia_list, sil_list = [], []
     for k in k_values:
-        km_eval = KMeans(n_clusters=k, random_state=42, n_init=10, max_iter=300)
+        km_eval = KMeans(
+            n_clusters=k,
+            init="k-means++",
+            random_state=42,
+            n_init=10,
+            max_iter=500,   # sama dengan clustering utama agar inertia sebanding
+        )
         lbl_eval = km_eval.fit_predict(X_lsa)
         inertia_list.append(round(float(km_eval.inertia_), 4))
-        sil_list.append(round(float(silhouette_score(X_lsa, lbl_eval)), 4))
+        sil_val = float(silhouette_score(X_lsa, lbl_eval)) if len(set(lbl_eval)) > 1 else 0.0
+        sil_list.append(round(sil_val, 4))
 
     best_sil_idx = int(np.argmax(sil_list)) if sil_list else None
 
@@ -717,6 +950,8 @@ def run_clustering(
 
     chart_distribution = "distribusi_cluster.png"
     chart_evaluation = "evaluasi_cluster.png"
+    chart_elbow = "elbow_method.png"
+    chart_silhouette = "silhouette_score.png"
     create_bar_chart(summary, os.path.join(result_dir, chart_distribution))
     create_eval_chart(k_values, inertia_list, sil_list, jumlah_cluster, os.path.join(result_dir, chart_evaluation))
     wordclouds = create_wordclouds(df, result_dir, jumlah_cluster)
@@ -773,11 +1008,13 @@ def run_clustering(
             "rekomendasi_k": rekomendasi_k,
         },
         "files": {
-            "csv":               csv_output,
-            "excel":             excel_output,
+            "csv":                csv_output,
+            "excel":              excel_output,
             "chart_distribution": chart_distribution,
-            "chart_evaluation":  chart_evaluation,
-            "wordclouds":        wordclouds,
+            "chart_evaluation":   chart_evaluation,
+            "chart_elbow":        chart_elbow,
+            "chart_silhouette":   chart_silhouette,
+            "wordclouds":         wordclouds,
         },
         "preview_raw": df_raw.head(10).fillna("").to_dict(orient="records"),
         "preview_preprocessing": df[[komentar_col, "komentar_bersih"]].head(15).fillna("").to_dict(orient="records"),

@@ -23,15 +23,25 @@
 
 <div class="laporan-container">
 
-  {# ── Kop Surat ── #}
+  {# ── Kop Surat Profesional ── #}
   <div class="laporan-kop">
-    <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo Perusahaan" class="laporan-kop-logo">
+    <img src="{{ url_for('static', filename='logo.png') }}"
+         alt="Logo PT Bank Mandiri" class="laporan-kop-logo"
+         onerror="this.style.display='none'">
     <div class="laporan-kop-text">
       <h2>PT Bank Mandiri (Persero) Tbk</h2>
-      <p>Senayan City, Lantai LGF, No. 07B, Jl. Asia Afrika Lot.19, Gelora, Tanah Abang, Jakarta Pusat</p>
-      <p>www.bankmandiri.co.id</p>
+      <p><strong>Alamat&nbsp;:</strong>
+         Senayan City, Lantai LGF, No. 07B, Jl. Asia Afrika Lot.19,
+         Gelora, Tanah Abang, Jakarta Pusat 10270</p>
+      <p>
+        <strong>Telepon&nbsp;:</strong> (021) 5263000
+        &nbsp;&nbsp;
+        <strong>Email&nbsp;:</strong> corporate.secretary@bankmandiri.co.id
+      </p>
+      <p><strong>Website&nbsp;:</strong> www.bankmandiri.co.id</p>
     </div>
   </div>
+  <hr class="laporan-kop-divider" style="border-top:2px solid #E2E8F0;margin:0 0 0;">
   <div class="laporan-report-title">
     <h3><i class="fa-solid fa-lightbulb me-2"></i>Laporan Interpretasi Cluster</h3>
     <p>Pengelompokan Opini Publik TikTok Bank Mandiri &mdash; K-Means Clustering</p>
@@ -46,10 +56,6 @@
     <div class="laporan-meta-item">
       <span class="meta-label">Jumlah Cluster</span>
       <span class="meta-value">{{ state.metrics.jumlah_cluster }}</span>
-    </div>
-    <div class="laporan-meta-item">
-      <span class="meta-label">Silhouette Score</span>
-      <span class="meta-value">{{ state.metrics.silhouette_score }}</span>
     </div>
     <div class="laporan-meta-item">
       <span class="meta-label">K Dipilih</span>
@@ -73,7 +79,6 @@
             <th>Label Topik</th>
             <th class="text-center">Jumlah</th>
             <th class="text-center">%</th>
-            <th class="text-center">Sil. Rata-rata</th>
             <th>Kata Kunci Utama</th>
           </tr>
         </thead>
@@ -90,7 +95,6 @@
             <td><strong>{{ item.label }}</strong></td>
             <td class="text-center font-monospace fw-bold">{{ item.jumlah }}</td>
             <td class="text-center font-monospace">{{ "%.2f"|format(item.persen) }}%</td>
-            <td class="text-center font-monospace">{{ "%.4f"|format(item.silhouette_rata2) if item.silhouette_rata2 is not none else '-' }}</td>
             <td>
               <div class="laporan-word-tags">
                 {% for word in item.top_words[:5] %}
@@ -128,14 +132,6 @@
             <i class="fa-solid fa-comment me-1" style="color:{{ colors[ci] }};"></i>
             {{ item.jumlah }} komentar ({{ "%.2f"|format(item.persen) }}%)
           </span>
-          <span class="laporan-stat-chip">
-            Silhouette: <strong>{{ "%.4f"|format(item.silhouette_rata2) if item.silhouette_rata2 is not none else '-' }}</strong>
-          </span>
-          <span class="laporan-stat-chip">
-            Min: <strong style="color:#DC2626;">{{ "%.4f"|format(item.silhouette_min) if item.silhouette_min is not none else '-' }}</strong>
-            &nbsp;|&nbsp;
-            Max: <strong style="color:#15803D;">{{ "%.4f"|format(item.silhouette_max) if item.silhouette_max is not none else '-' }}</strong>
-          </span>
         </div>
       </div>
 
@@ -159,15 +155,14 @@
       <div>
         <p style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;
                   letter-spacing:.5px;margin-bottom:8px;">
-          Sampel Komentar Tertinggi (Silhouette)
+          Sampel Komentar Representatif
         </p>
         <div class="table-responsive" style="border-radius:8px;overflow:hidden;border:2px solid #E2E8F0;box-shadow:none;">
           <table class="laporan-table" style="margin:0;">
             <thead>
               <tr>
-                <th style="width:45%;">Komentar Asli</th>
-                <th style="width:43%;">Komentar Setelah Preprocessing</th>
-                <th class="text-center" style="width:12%;">Silhouette</th>
+                <th style="width:50%;">Komentar Asli</th>
+                <th style="width:50%;">Komentar Setelah Preprocessing</th>
               </tr>
             </thead>
             <tbody>
@@ -179,10 +174,6 @@
                 </td>
                 <td class="font-monospace" style="font-size:12px;color:#1D4ED8;line-height:1.5;">
                   {{ sample.komentar_bersih }}
-                </td>
-                <td class="text-center font-monospace fw-bold"
-                    style="color:{{ '#15803D' if (sample.silhouette_sample or 0) >= 0 else '#DC2626' }};">
-                  {{ "%.4f"|format(sample.silhouette_sample) if sample.silhouette_sample is not none else '-' }}
                 </td>
               </tr>
               {% endfor %}
@@ -200,7 +191,6 @@
     <strong><i class="fa-solid fa-circle-info me-1"></i>Panduan Membaca Laporan:</strong>
     <ul style="margin:8px 0 0 18px;line-height:1.8;">
       <li><strong>Kata Kunci</strong> diekstrak dari centroid TF-IDF — mencerminkan inti tematik cluster.</li>
-      <li><strong>Silhouette Sample</strong> mengukur seberapa dekat suatu komentar ke cluster-nya vs cluster tetangga. Nilai positif berarti komentar berada di cluster yang tepat.</li>
       <li><strong>Token Preprocessing</strong> adalah hasil normalisasi dan stemming bahasa Indonesia menggunakan Sastrawi.</li>
     </ul>
   </div>
@@ -219,8 +209,8 @@
     </div>
     <div class="laporan-signature-right">
       <p class="sig-greeting">Mengetahui,</p>
-      <p class="sig-name">Rahmad Supandi</p>
-      <p class="sig-title">Direktur</p>
+      <p class="sig-name">Gilang Afandi Harahap</p>
+      <p class="sig-title">Pimpinan</p>
     </div>
   </div>
 

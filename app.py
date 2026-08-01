@@ -363,7 +363,7 @@ def clustering():
             return redirect(url_for("clustering"))
 
         set_message("Clustering berhasil dilakukan.")
-        return redirect(url_for("visualisasi"))
+        return redirect(url_for("laporan_visualisasi"))
 
     return render_template("clustering.html", state=STATE)
 

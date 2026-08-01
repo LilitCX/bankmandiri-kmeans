@@ -554,6 +554,13 @@ strong, b { font-weight: 700; color: var(--nb-black); }
 }
 .chart-header .chart-title { margin-bottom: 0; }
 
+/* Tombol download selalu rata kanan-atas di dalam chart-header */
+.chart-header .btn-download-chart {
+  flex-shrink: 0;
+  align-self: flex-start;
+  margin-left: auto;
+}
+
 .btn-download-chart {
   display: inline-flex;
   align-items: center;
@@ -569,12 +576,43 @@ strong, b { font-weight: 700; color: var(--nb-black); }
   text-decoration: none;
   box-shadow: var(--nb-shadow);
   transition: transform 0.1s, box-shadow 0.1s;
+  white-space: nowrap;
 }
 .btn-download-chart:hover {
   transform: translate(-1px,-1px);
   box-shadow: 5px 5px 0 var(--nb-black);
   color: var(--nb-black);
   text-decoration: none;
+}
+
+/* ── Chart image wrapper — tombol overlay di pojok kanan atas gambar ── */
+.chart-img-wrap {
+  position: relative;
+  display: block;
+}
+.chart-img-wrap .btn-download-chart {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 10;
+  opacity: 0.92;
+  /* ukuran sedikit lebih kompak agar tidak menutupi isi grafik */
+  padding: 4px 10px;
+  font-size: 11px;
+}
+.chart-img-wrap .btn-download-chart:hover {
+  opacity: 1;
+  transform: translate(-1px,-1px);
+  box-shadow: 4px 4px 0 var(--nb-black);
+}
+/* Responsive — tombol lebih kecil di layar sempit */
+@media (max-width: 576px) {
+  .chart-img-wrap .btn-download-chart {
+    padding: 3px 8px;
+    font-size: 10px;
+    top: 6px;
+    right: 6px;
+  }
 }
 
 /* ============================================================
@@ -1125,43 +1163,54 @@ hr { border-color: var(--nb-black); opacity: 1; border-width: 2px; }
 /* Kop surat dengan logo — tampil di layar & saat print browser */
 .laporan-kop {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 20px;
-  padding: 18px 0 16px;
+  padding: 20px 0 16px;
   margin-bottom: 0;
-  border-bottom: 3px solid var(--nb-navy);
 }
 .laporan-kop-logo {
-  width: 64px;
-  max-width: 64px;
-  max-height: 64px;
+  width: 68px;
+  max-width: 68px;
+  max-height: 68px;
   height: auto;
   object-fit: contain;
   flex-shrink: 0;
+  margin-top: 2px;
+}
+.laporan-kop-text {
+  flex: 1;
+  min-width: 0;
 }
 .laporan-kop-text h2 {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 800;
   color: var(--nb-navy);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin: 0 0 3px;
+  letter-spacing: 0.6px;
+  margin: 0 0 5px;
+  line-height: 1.15;
 }
 .laporan-kop-text p {
-  font-size: 11px;
+  font-size: 12px;
   color: #475569;
-  margin: 0;
+  margin: 0 0 2px;
+  line-height: 1.6;
+}
+.laporan-kop-text p strong {
+  color: #334155;
+  font-weight: 700;
 }
 .laporan-kop-divider {
   border: none;
-  border-top: 1px solid #CBD5E1;
-  margin: 0 0 20px;
+  border-top: 3px double var(--nb-navy);
+  margin: 10px 0 0 0;
 }
 .laporan-report-title {
   text-align: center;
-  padding: 16px 0 18px;
+  padding: 14px 0 16px;
   border-bottom: 1px solid #E2E8F0;
   margin-bottom: 24px;
+  margin-top: 10px;
 }
 .laporan-report-title h3 {
   font-size: 15px;
@@ -1239,16 +1288,26 @@ hr { border-color: var(--nb-black); opacity: 1; border-width: 2px; }
   letter-spacing: 0.3px;
   border: 2px solid var(--nb-navy-mid) !important;
   white-space: nowrap;
+  vertical-align: middle;
 }
 .laporan-table tbody td {
-  padding: 10px 14px;
+  padding: 9px 13px;
   border: 1.5px solid #E2E8F0;
   color: var(--nb-black);
   vertical-align: middle;
-  line-height: 1.5;
+  line-height: 1.55;
+  font-size: 13px;
 }
 .laporan-table tbody tr:nth-child(even) td { background: #F8FAFC; }
 .laporan-table tbody tr:hover td { background: #EFF6FF; }
+
+/* Wrapper scroll horizontal tabel laporan */
+.laporan-section .table-responsive,
+.table-responsive.laporan-scroll {
+  overflow-x: auto !important;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
+}
 
 /* Metric tiles in laporan */
 .laporan-metrics {
@@ -1392,20 +1451,18 @@ hr { border-color: var(--nb-black); opacity: 1; border-width: 2px; }
    LAPORAN — SIGNATURE BLOCK
 ============================================================ */
 .laporan-signature-block {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  margin-top: 48px;
-  padding-top: 28px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: end;
+  margin-top: 56px;
+  padding-top: 24px;
   border-top: 2px solid #E2E8F0;
-  flex-wrap: wrap;
-  gap: 24px;
 }
 .laporan-signature-left {
-  font-size: 13px;
-  color: #475569;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--nb-navy);
   line-height: 1.7;
-  min-width: 180px;
 }
 .laporan-signature-left .sig-date {
   font-size: 14px;
@@ -1413,28 +1470,31 @@ hr { border-color: var(--nb-black); opacity: 1; border-width: 2px; }
   color: var(--nb-navy);
 }
 .laporan-signature-right {
-  text-align: center;
-  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 .laporan-signature-right .sig-greeting {
   font-size: 13px;
   color: #475569;
-  margin-bottom: 64px;
+  margin: 0 0 72px 0;
 }
 .laporan-signature-right .sig-name {
   font-size: 15px;
   font-weight: 800;
   color: var(--nb-navy);
-  border-top: 2px solid var(--nb-navy);
-  display: inline-block;
-  padding-top: 6px;
-  min-width: 180px;
+  border-top: 2.5px solid var(--nb-navy);
+  min-width: 200px;
+  padding-top: 8px;
+  text-align: left;
+  margin: 0;
 }
 .laporan-signature-right .sig-title {
   font-size: 13px;
   color: #475569;
   font-weight: 600;
-  margin-top: 2px;
+  margin: 4px 0 0 0;
+  text-align: left;
 }
 
 /* ============================================================
@@ -1454,8 +1514,35 @@ hr { border-color: var(--nb-black); opacity: 1; border-width: 2px; }
     padding: 20px 0 !important;
     max-width: 100% !important;
   }
+  /* Pastikan kop surat tampil saat print */
+  .laporan-kop {
+    display: flex !important;
+    padding: 0 0 12px !important;
+    border-bottom: none !important;
+  }
+  .laporan-kop-divider {
+    display: block !important;
+    border-top: 2px solid #1D4ED8 !important;
+    margin: 0 0 8px !important;
+  }
+  /* Sembunyikan tombol download saat print */
+  .btn-download-chart { display: none !important; }
   .laporan-table tbody tr:hover td { background: transparent !important; }
-  .laporan-signature-block { page-break-inside: avoid; margin-top: 32px; }
+  .laporan-signature-block {
+    page-break-inside: avoid;
+    margin-top: 32px;
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    align-items: end !important;
+  }
+  .laporan-signature-left {
+    text-align: left !important;
+  }
+  .laporan-signature-right {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
   body { font-size: 11pt; }
   /* Sembunyikan pagination saat print, tampilkan semua baris */
   .no-print { display: none !important; }
@@ -1481,6 +1568,6 @@ hr { border-color: var(--nb-black); opacity: 1; border-width: 2px; }
   .laporan-table { font-size: 12px; }
   .laporan-table thead th,
   .laporan-table tbody td { padding: 8px 10px; }
-  .laporan-signature-block { flex-direction: column; align-items: flex-start; }
-  .laporan-signature-right { align-self: flex-end; }
+  .laporan-signature-block { flex-wrap: wrap; gap: 20px; }
+  .laporan-signature-right { align-self: flex-end; min-width: 180px; }
 }

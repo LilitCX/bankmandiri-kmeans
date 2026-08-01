@@ -109,11 +109,11 @@ def make_wordcloud_b64(text: str) -> str | None:
             .generate(str(text))
         )
         buf = io.BytesIO()
-        plt.figure(figsize=(9, 4.5))
+        plt.figure(figsize=(10, 5))
         plt.imshow(wc, interpolation="bilinear")
         plt.axis("off")
         plt.tight_layout(pad=0)
-        plt.savefig(buf, format="png", bbox_inches="tight", pad_inches=0)
+        plt.savefig(buf, format="png", dpi=180, bbox_inches="tight", pad_inches=0)
         plt.close("all")
         buf.seek(0)
         data = buf.getvalue()
@@ -159,6 +159,21 @@ def apply_metadata(metadata: dict, result_dir: str) -> None:
     k_values = evaluation.get("k_values", [])
     wc_files = metadata.get("files", {}).get("wordclouds", {})
 
+    # Muat gambar grafik evaluasi dari disk (base64) agar bisa di-embed di halaman
+    def _load_img_b64(fname: str | None) -> str | None:
+        if not fname or not result_dir:
+            return None
+        path = os.path.join(result_dir, fname)
+        if not os.path.exists(path):
+            return None
+        with open(path, "rb") as fh:
+            return base64.b64encode(fh.read()).decode("utf-8")
+
+    files_meta = metadata.get("files", {})
+    eval_chart_b64      = _load_img_b64(files_meta.get("chart_evaluation"))
+    elbow_chart_b64     = _load_img_b64(files_meta.get("chart_elbow"))
+    silhouette_chart_b64= _load_img_b64(files_meta.get("chart_silhouette"))
+
     wordclouds: dict = {}
     top_words: dict = {}
 
@@ -189,6 +204,11 @@ def apply_metadata(metadata: dict, result_dir: str) -> None:
                 for _ in range(max(1, len(words) - i))
             )
             wordclouds[cid] = make_wordcloud_b64(weighted)
+
+    # Normalisasi key wordclouds dan top_words ke int agar konsisten
+    # (JSON round-trip via Supabase mengubah int key menjadi string)
+    wordclouds = {int(k): v for k, v in wordclouds.items()}
+    top_words  = {int(k): v for k, v in top_words.items()}
 
     STATE.update({
         "result_df": result_df,
@@ -229,6 +249,9 @@ def apply_metadata(metadata: dict, result_dir: str) -> None:
         "eval_labels": [f"K={k}" for k in k_values],
         "eval_sse": [round(float(x), 4) for x in evaluation.get("inertia", [])],
         "eval_silhouette": [round(float(x), 4) for x in evaluation.get("silhouette", [])],
+        "eval_chart_b64": eval_chart_b64,
+        "elbow_chart_b64": elbow_chart_b64,
+        "silhouette_chart_b64": silhouette_chart_b64,
     })
 
 

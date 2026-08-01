@@ -2,26 +2,51 @@
 {% block content %}
 
 <div class="page-header">
-  <h1><i class="fa-solid fa-star-half-stroke me-2"></i>Evaluasi Cluster</h1>
-  <p>Elbow Method (SSE/Inertia) dan Silhouette Score untuk k = 2, 3, 4, 5.</p>
+  <h1><i class="fa-solid fa-star-half-stroke me-2"></i>Laporan Evaluasi Clustering</h1>
+  <p>Elbow Method (SSE/Inertia) dan Silhouette Score — dihitung dari hasil clustering nyata (k = 2, 3, 4, 5).</p>
 </div>
 
-<div class="d-flex justify-content-end mb-4">
-  <a href="{{ url_for('download_laporan') }}" class="btn btn-success" target="_blank">
-    <i class="fa-solid fa-file-pdf me-1"></i>Cetak Laporan PDF
-  </a>
+<!-- ── Toolbar ── -->
+<div class="laporan-toolbar mb-4">
+  <span class="laporan-toolbar-title">
+    <i class="fa-solid fa-star-half-stroke me-1" style="color:var(--nb-blue);"></i>
+    Pipeline: Preprocessing → TF-IDF → LSA/SVD → K-Means
+  </span>
+  <div class="laporan-toolbar-actions">
+    <a href="{{ url_for('laporan_evaluasi') }}" class="btn btn-outline-primary btn-sm">
+      <i class="fa-solid fa-file-lines me-1"></i>Versi Laporan
+    </a>
+    <a href="{{ url_for('download_laporan') }}" class="btn btn-success btn-sm" target="_blank">
+      <i class="fa-solid fa-file-pdf me-1"></i>Cetak PDF
+    </a>
+  </div>
 </div>
 
-{% if state.metrics %}
+<!-- ── Fallback: belum ada data ── -->
+{% if not state.metrics %}
+<div class="custom-card">
+  <div class="card-body">
+    <div class="alert alert-warning mb-0">
+      <i class="fa-solid fa-triangle-exclamation me-2"></i>
+      Belum ada data evaluasi.
+      <a href="{{ url_for('clustering') }}" class="fw-bold">Jalankan clustering terlebih dahulu.</a>
+    </div>
+  </div>
+</div>
+{% else %}
+
+<!-- ══════════════════════════════════════════════════════
+     SECTION 1 — Metrik Utama
+     ══════════════════════════════════════════════════════ -->
 <div class="row g-3 mb-4">
   {% for label, val, acc in [
-    ('Total Data', state.metrics.total_data, 'accent-blue'),
-    ('Jumlah Cluster', state.metrics.jumlah_cluster, 'accent-purple'),
-    ('Silhouette Score', state.metrics.silhouette_score, 'accent-green'),
-    ('Fitur TF-IDF', state.metrics.jumlah_fitur_tfidf, 'accent-orange'),
-    ('Komponen LSA', state.metrics.jumlah_komponen_lsa, 'accent-yellow'),
+    ('Total Data Valid',  state.metrics.total_data,         'accent-blue'),
+    ('Jumlah Cluster',    state.metrics.jumlah_cluster,     'accent-purple'),
+    ('Silhouette Score',  state.metrics.silhouette_score,   'accent-green'),
+    ('Fitur TF-IDF',      state.metrics.jumlah_fitur_tfidf, 'accent-orange'),
+    ('Komponen LSA/SVD',  state.metrics.jumlah_komponen_lsa,'accent-yellow'),
   ] %}
-  <div class="col-6 col-md-2">
+  <div class="col-6 col-md">
     <div class="metric-card {{ acc }}">
       <p>{{ label }}</p>
       <h3>{{ val }}</h3>
@@ -29,15 +54,17 @@
   </div>
   {% endfor %}
 </div>
-{% endif %}
 
+<!-- ══════════════════════════════════════════════════════
+     SECTION 2 — Statistik Preprocessing
+     ══════════════════════════════════════════════════════ -->
 {% if state.preprocessing_stats %}
 <div class="custom-card mb-4">
   <div class="card-body">
-    <h5 class="chart-title mb-3">Statistik Preprocessing</h5>
+    <h5 class="chart-title mb-3"><i class="fa-solid fa-filter me-2" style="color:var(--nb-blue);"></i>Statistik Preprocessing</h5>
     <div class="table-responsive">
-      <table class="table table-bordered mb-0">
-        <thead>
+      <table class="table table-bordered table-hover mb-0">
+        <thead class="table-light">
           <tr>
             <th>Tahap</th>
             <th class="text-center">Jumlah Data</th>
@@ -73,7 +100,7 @@
           <tr class="table-success">
             <td><strong>Data Final (Valid)</strong></td>
             <td class="text-center font-monospace fw-bold" style="color:#15803D;">{{ state.preprocessing_stats.jumlah_data_valid }}</td>
-            <td>Digunakan untuk TF-IDF, LSA, dan K-Means</td>
+            <td>Digunakan untuk TF-IDF → LSA → K-Means</td>
           </tr>
         </tbody>
       </table>
@@ -82,31 +109,43 @@
 </div>
 {% endif %}
 
+<!-- ══════════════════════════════════════════════════════
+     SECTION 3 — Rekomendasi K
+     ══════════════════════════════════════════════════════ -->
 {% if state.best_k %}
 <div class="row g-3 mb-4">
-  {% for label, val, sub in [
-    ('K Dipilih', state.best_k.dipilih, ''),
-    ('K Terbaik Silhouette', state.best_k.silhouette.k, 'Nilai ' ~ state.best_k.silhouette.nilai),
-  ] %}
   <div class="col-md-6">
     <div class="metric-card accent-yellow text-center">
-      <p>{{ label }}</p>
-      <h3 style="font-size:30px;">{{ val }}</h3>
-      {% if sub %}<small style="color:#374151;">{{ sub }}</small>{% endif %}
+      <p>K yang Digunakan</p>
+      <h3 style="font-size:34px;">{{ state.best_k.dipilih }}</h3>
+      <small style="color:#374151;">Dipilih saat menjalankan clustering</small>
     </div>
   </div>
-  {% endfor %}
+  <div class="col-md-6">
+    <div class="metric-card accent-green text-center">
+      <p>K Terbaik (Silhouette)</p>
+      <h3 style="font-size:34px;">{{ state.best_k.silhouette.k }}</h3>
+      <small style="color:#374151;">Nilai: {{ state.best_k.silhouette.nilai }}</small>
+    </div>
+  </div>
 </div>
 {% endif %}
 
-<!-- Tabel perbandingan k -->
+<!-- ══════════════════════════════════════════════════════
+     SECTION 4 — Tabel Perbandingan K
+     ══════════════════════════════════════════════════════ -->
 {% if state.eval_labels and state.eval_sse %}
 <div class="custom-card mb-4">
   <div class="card-body">
-    <h5 class="chart-title mb-3">Perbandingan Nilai k = 2, 3, 4, 5</h5>
+    <h5 class="chart-title mb-1">
+      <i class="fa-solid fa-table me-2" style="color:var(--nb-blue);"></i>Perbandingan Nilai k = 2, 3, 4, 5
+    </h5>
+    <p style="color:#6B7280;font-size:13px;margin-bottom:14px;">
+      Setiap nilai dihitung ulang dari data nyata setiap kali clustering dijalankan.
+    </p>
     <div class="table-responsive">
       <table class="table table-bordered mb-0">
-        <thead>
+        <thead class="table-light">
           <tr>
             <th class="text-center">Jumlah Cluster (k)</th>
             <th class="text-center">Inertia / SSE</th>
@@ -116,23 +155,24 @@
         </thead>
         <tbody>
           {% for i in range(state.eval_labels|length) %}
-          {% set is_chosen = (state.eval_labels[i] == 'K=' ~ state.k) or (state.eval_labels[i] == 'K=' ~ state.metrics.jumlah_cluster) %}
-          {% set is_best_sil = state.best_k and state.best_k.silhouette and (state.eval_labels[i] == 'K=' ~ state.best_k.silhouette.k) %}
+          {% set knum = state.eval_labels[i]|replace('K=','') %}
+          {% set is_chosen = (knum|int == state.k) or (state.metrics and knum|int == state.metrics.jumlah_cluster) %}
+          {% set is_best_sil = state.best_k and state.best_k.silhouette and (knum|int == state.best_k.silhouette.k) %}
           <tr {% if is_chosen %}style="background:#EFF6FF;font-weight:700;"{% endif %}>
             <td class="text-center font-monospace">
               {{ state.eval_labels[i] }}
               {% if is_chosen %}<span class="badge bg-primary ms-2">Dipilih</span>{% endif %}
             </td>
-            <td class="text-center font-monospace">{{ state.eval_sse[i] }}</td>
+            <td class="text-center font-monospace">{{ "{:,.4f}".format(state.eval_sse[i]) }}</td>
             <td class="text-center font-monospace">
-              {{ state.eval_silhouette[i] }}
+              {{ "%.4f"|format(state.eval_silhouette[i]) }}
               {% if is_best_sil %}<span class="badge bg-success ms-2">Terbaik</span>{% endif %}
             </td>
             <td class="text-center" style="font-size:12px;color:#4B5563;">
-              {% if is_chosen and is_best_sil %}K dipilih & silhouette terbaik
+              {% if is_chosen and is_best_sil %}K dipilih &amp; silhouette terbaik
               {% elif is_chosen %}K yang digunakan
               {% elif is_best_sil %}Silhouette tertinggi
-              {% else %}-{% endif %}
+              {% else %}—{% endif %}
             </td>
           </tr>
           {% endfor %}
@@ -143,44 +183,132 @@
 </div>
 {% endif %}
 
-<!-- Charts row 1 -->
+<!-- ══════════════════════════════════════════════════════
+     SECTION 5 — Grafik Elbow Method & Silhouette Score
+     (prioritas: gambar PNG dari server; fallback: Chart.js)
+     ══════════════════════════════════════════════════════ -->
+{% if state.eval_labels and state.eval_sse %}
 <div class="row g-4 mb-4">
-  <div class="col-lg-6">
-    <div class="custom-card">
-      <div class="card-body">
-        <div class="chart-header">
-          <h5 class="chart-title">Elbow Method (Inertia / SSE)</h5>
-          <button class="btn-download-chart" onclick="downloadChart('sseChart','elbow.png')">
-            <i class="fa-solid fa-download"></i> PNG
-          </button>
-        </div>
-        <div class="chart-wrapper"><canvas id="sseChart"></canvas></div>
-      </div>
-    </div>
-  </div>
-  <div class="col-lg-6">
-    <div class="custom-card">
-      <div class="card-body">
-        <div class="chart-header">
-          <h5 class="chart-title">Silhouette Score per K</h5>
-          <button class="btn-download-chart" onclick="downloadChart('silChart','silhouette.png')">
-            <i class="fa-solid fa-download"></i> PNG
-          </button>
-        </div>
-        <div class="chart-wrapper"><canvas id="silChart"></canvas></div>
-      </div>
-    </div>
-  </div>
-</div>
 
-<!-- Charts row 2 -->
+  <!-- Elbow Method -->
+  <div class="col-lg-6">
+    <div class="custom-card h-100">
+      <div class="card-body">
+
+        {% if state.elbow_chart_b64 %}
+        {# Mode PNG — header hanya berisi judul+deskripsi;
+           tombol download diletakkan sebagai overlay di pojok kanan atas gambar #}
+        <div class="chart-header" style="margin-bottom:10px;">
+          <div>
+            <h5 class="chart-title">Elbow Method (Inertia / SSE)</h5>
+            <p style="font-size:11px;color:#6B7280;margin:2px 0 0;">
+              Cari titik "siku" — penurunan inertia mulai melambat.
+            </p>
+          </div>
+        </div>
+        <div class="chart-img-wrap">
+          <img id="img-elbow"
+               src="data:image/png;base64,{{ state.elbow_chart_b64 }}"
+               class="img-fluid w-100"
+               style="border:1px solid #E2E8F0;border-radius:8px;display:block;"
+               alt="Grafik Elbow Method">
+          <button class="btn-download-chart"
+                  onclick="downloadImg('img-elbow','elbow-method.png')"
+                  title="Unduh elbow-method.png">
+            <i class="fa-solid fa-download"></i> PNG
+          </button>
+        </div>
+
+        {% else %}
+        {# Mode Canvas Chart.js — tombol download di chart-header (kanan atas header) #}
+        <div class="chart-header">
+          <div>
+            <h5 class="chart-title">Elbow Method (Inertia / SSE)</h5>
+            <p style="font-size:11px;color:#6B7280;margin:2px 0 8px;">
+              Cari titik "siku" — penurunan inertia mulai melambat.
+            </p>
+          </div>
+          <button class="btn-download-chart"
+                  onclick="downloadImg('elbowChart','elbow-method.png')"
+                  title="Unduh elbow-method.png">
+            <i class="fa-solid fa-download"></i> PNG
+          </button>
+        </div>
+        <div class="chart-wrapper"><canvas id="elbowChart"></canvas></div>
+        {% endif %}
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Silhouette Score -->
+  <div class="col-lg-6">
+    <div class="custom-card h-100">
+      <div class="card-body">
+
+        {% if state.silhouette_chart_b64 %}
+        {# Mode PNG — overlay tombol di pojok kanan atas gambar #}
+        <div class="chart-header" style="margin-bottom:10px;">
+          <div>
+            <h5 class="chart-title">Silhouette Score per K</h5>
+            <p style="font-size:11px;color:#6B7280;margin:2px 0 0;">
+              Nilai lebih tinggi = cluster lebih kompak dan terpisah.
+            </p>
+          </div>
+        </div>
+        <div class="chart-img-wrap">
+          <img id="img-silhouette"
+               src="data:image/png;base64,{{ state.silhouette_chart_b64 }}"
+               class="img-fluid w-100"
+               style="border:1px solid #E2E8F0;border-radius:8px;display:block;"
+               alt="Grafik Silhouette Score">
+          <button class="btn-download-chart"
+                  onclick="downloadImg('img-silhouette','silhouette-score.png')"
+                  title="Unduh silhouette-score.png">
+            <i class="fa-solid fa-download"></i> PNG
+          </button>
+        </div>
+
+        {% else %}
+        {# Mode Canvas Chart.js #}
+        <div class="chart-header">
+          <div>
+            <h5 class="chart-title">Silhouette Score per K</h5>
+            <p style="font-size:11px;color:#6B7280;margin:2px 0 8px;">
+              Nilai lebih tinggi = cluster lebih kompak dan terpisah.
+            </p>
+          </div>
+          <button class="btn-download-chart"
+                  onclick="downloadImg('silhouetteChart','silhouette-score.png')"
+                  title="Unduh silhouette-score.png">
+            <i class="fa-solid fa-download"></i> PNG
+          </button>
+        </div>
+        <div class="chart-wrapper"><canvas id="silhouetteChart"></canvas></div>
+        {% endif %}
+
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endif %}
+
+<!-- ══════════════════════════════════════════════════════
+     SECTION 6 — Silhouette Rata-rata per Cluster + Seed
+     ══════════════════════════════════════════════════════ -->
 <div class="row g-4 mb-4">
+
+  <!-- Grafik bar silhouette per cluster -->
+  {% if state.cluster_quality %}
   <div class="col-lg-7">
     <div class="custom-card h-100">
       <div class="card-body">
         <div class="chart-header">
           <h5 class="chart-title">Silhouette Rata-rata per Cluster</h5>
-          <button class="btn-download-chart" onclick="downloadChart('clusterSilChart','sil_per_cluster.png')">
+          <button class="btn-download-chart"
+                  onclick="downloadImg('clusterSilChart','silhouette-per-cluster.png')"
+                  title="Unduh silhouette-per-cluster.png">
             <i class="fa-solid fa-download"></i> PNG
           </button>
         </div>
@@ -188,108 +316,267 @@
       </div>
     </div>
   </div>
+  {% endif %}
+
+  <!-- Tabel validasi seed topic -->
   <div class="col-lg-5">
     <div class="custom-card h-100">
       <div class="card-body">
-        <h5 class="chart-title">Validasi Seed Topic</h5>
+        <h5 class="chart-title mb-3">
+          <i class="fa-solid fa-shield-check me-2" style="color:var(--nb-blue);"></i>Validasi Seed Topic
+        </h5>
         {% if state.seed_summary %}
         <div class="table-responsive">
           <table class="table table-bordered mb-0">
-            <thead><tr><th>Kategori</th><th class="text-center">Jumlah</th></tr></thead>
+            <thead class="table-light">
+              <tr><th>Kategori</th><th class="text-center">Jumlah</th></tr>
+            </thead>
             <tbody>
               {% for key, val in state.seed_summary.items() %}
-              <tr><td>{{ key }}</td><td class="text-center font-monospace">{{ val }}</td></tr>
+              <tr>
+                <td>{{ key }}</td>
+                <td class="text-center font-monospace fw-bold">{{ val }}</td>
+              </tr>
               {% endfor %}
             </tbody>
           </table>
         </div>
         {% else %}
-        <p style="color:#6B7280;">Belum ada ringkasan seed topic.</p>
+        <p style="color:#6B7280;font-size:14px;">Data seed topic belum tersedia.</p>
         {% endif %}
       </div>
     </div>
   </div>
+
 </div>
 
-<div class="custom-card">
+<!-- ══════════════════════════════════════════════════════
+     SECTION 7 — Kualitas per Cluster (tabel detail)
+     ══════════════════════════════════════════════════════ -->
+{% if state.cluster_quality %}
+<div class="custom-card mb-4">
   <div class="card-body">
-    <div class="alert alert-info mb-0">
-      <i class="fa-solid fa-circle-info me-2"></i>
-      <strong>Catatan:</strong> Silhouette Score mendekati 1 = cluster sangat kompak dan terpisah.
-      Nilai 0.1–0.3 masih wajar untuk komentar media sosial yang pendek dan tidak baku.
-      Elbow ditandai dengan penurunan Inertia yang mulai melambat.
+    <h5 class="chart-title mb-3">
+      <i class="fa-solid fa-list-check me-2" style="color:var(--nb-blue);"></i>Kualitas Silhouette per Cluster
+    </h5>
+    <div class="table-responsive">
+      <table class="table table-bordered mb-0">
+        <thead class="table-light">
+          <tr>
+            <th class="text-center">Cluster</th>
+            <th class="text-center">Jumlah Data</th>
+            <th class="text-center">%</th>
+            <th class="text-center">Sil. Rata-rata</th>
+            <th class="text-center">Sil. Min</th>
+            <th class="text-center">Sil. Max</th>
+            <th>Label Topik</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% set colors = ['#2563EB','#F97316','#22C55E','#8B5CF6','#EF4444','#EC4899','#14B8A6','#6366F1'] %}
+          {% for item in state.cluster_summary %}
+          {% set ci = item.cluster % 8 %}
+          <tr>
+            <td class="text-center">
+              <span class="badge" style="background:{{ colors[ci] }};color:#fff;padding:4px 10px;font-size:12px;">
+                C{{ item.cluster }}
+              </span>
+            </td>
+            <td class="text-center font-monospace fw-bold">{{ item.jumlah }}</td>
+            <td class="text-center font-monospace">{{ "%.2f"|format(item.persen) }}%</td>
+            <td class="text-center font-monospace">
+              {{ "%.4f"|format(item.silhouette_rata2) if item.silhouette_rata2 is not none else '—' }}
+            </td>
+            <td class="text-center font-monospace" style="color:#DC2626;">
+              {{ "%.4f"|format(item.silhouette_min) if item.silhouette_min is not none else '—' }}
+            </td>
+            <td class="text-center font-monospace" style="color:#15803D;">
+              {{ "%.4f"|format(item.silhouette_max) if item.silhouette_max is not none else '—' }}
+            </td>
+            <td><strong>{{ item.label }}</strong></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- ══════════════════════════════════════════════════════
+     SECTION 8 — Panduan Interpretasi
+     ══════════════════════════════════════════════════════ -->
+<div class="custom-card mb-4">
+  <div class="card-body">
+    <h5 class="chart-title mb-3">
+      <i class="fa-solid fa-circle-info me-2" style="color:var(--nb-blue);"></i>Panduan Membaca Hasil Evaluasi
+    </h5>
+    <div class="row g-3">
+      <div class="col-md-6">
+        <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:14px;">
+          <strong style="color:#1D4ED8;display:block;margin-bottom:6px;">
+            <i class="fa-solid fa-chart-line me-1"></i>Elbow Method (Inertia / SSE)
+          </strong>
+          <ul style="margin:0;padding-left:18px;line-height:1.9;font-size:13px;color:#374151;">
+            <li>Inertia mengukur total jarak kuadrat setiap titik ke centroid clusternya.</li>
+            <li>Semakin besar k, inertia makin kecil — cari titik "siku" di mana penurunan mulai melambat.</li>
+            <li>K di titik siku adalah kandidat terbaik secara kompaksi cluster.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div style="background:#F0FDF4;border:1px solid #BBF7D0;border-radius:8px;padding:14px;">
+          <strong style="color:#15803D;display:block;margin-bottom:6px;">
+            <i class="fa-solid fa-star-half-stroke me-1"></i>Silhouette Score
+          </strong>
+          <ul style="margin:0;padding-left:18px;line-height:1.9;font-size:13px;color:#374151;">
+            <li>Rentang: &minus;1 sampai +1. Nilai mendekati 1 = cluster kompak &amp; terpisah.</li>
+            <li>Nilai 0.1–0.3 masih wajar untuk komentar media sosial yang pendek dan tidak baku.</li>
+            <li>Pilih k dengan silhouette tertinggi sebagai rekomendasi utama.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="alert alert-info mb-0 mt-3" style="font-size:13px;">
+      <i class="fa-solid fa-rotate me-2"></i>
+      <strong>Otomatis diperbarui:</strong> Seluruh grafik dan nilai dihitung ulang setiap kali
+      proses clustering dijalankan dari halaman <a href="{{ url_for('clustering') }}">Clustering</a>.
     </div>
   </div>
 </div>
 
+{% endif %}{# end if state.metrics #}
+
+{% endblock %}
+
+{% block scripts %}
+{% if state.eval_labels and state.eval_sse %}
 <script>
-const eL = {{ state.eval_labels|tojson }};
-const eS = {{ state.eval_sse|tojson }};
-const eSil = {{ state.eval_silhouette|tojson }};
-const cQ = {{ state.cluster_quality|tojson }};
-const CC = ["#2563EB","#F97316","#22C55E","#8B5CF6","#EF4444","#EC4899","#14B8A6","#6366F1"];
-const kDipilih = {{ state.k }};
+(function () {
+  'use strict';
 
-const lineOpts = (color, selectedK) => ({
-  responsive:true, maintainAspectRatio:false,
-  plugins:{
-    legend:{display:false},
-    annotation:{
-      annotations:{
-        vline:{
-          type:'line', xMin: 'K='+selectedK, xMax: 'K='+selectedK,
-          borderColor:'#EF4444', borderWidth:2, borderDash:[6,4],
-          label:{ content:'K='+selectedK+' (dipilih)', enabled:true, color:'#EF4444', font:{size:11} }
-        }
-      }
-    }
-  },
-  scales:{
-    x:{grid:{color:'#E5E7EB'}, ticks:{color:'#374151',font:{weight:'700'}}},
-    y:{grid:{color:'#E5E7EB'}, ticks:{color:'#374151'}}
+  const eLabels  = {{ state.eval_labels|tojson }};    // ["K=2","K=3","K=4","K=5"]
+  const eSSE     = {{ state.eval_sse|tojson }};       // inertia list
+  const eSil     = {{ state.eval_silhouette|tojson }}; // silhouette list
+  const cQuality = {{ state.cluster_quality|tojson }};
+  const kDipilih = {{ state.k }};
+
+  const BLUE  = '#2563EB';
+  const GREEN = '#22C55E';
+  const RED   = '#EF4444';
+  const ORANGE= '#F97316';
+  const PALETTE = ['#2563EB','#F97316','#22C55E','#8B5CF6','#EF4444','#EC4899','#14B8A6','#6366F1'];
+
+  // ── Helper: warna titik (merah untuk K dipilih) ──────────────────────────
+  function pointColors(labels, baseColor) {
+    return labels.map(l => l === 'K=' + kDipilih ? RED : baseColor);
   }
-});
 
-[['sseChart',eS,'#2563EB'],['silChart',eSil,'#22C55E']].forEach(([id,data,col])=>{
-  new Chart(document.getElementById(id), {
-    type:'line',
-    data:{ labels:eL, datasets:[{
-      data, borderColor:col, backgroundColor:col+'22',
-      borderWidth:3, tension:0.3, pointRadius:6,
-      pointBackgroundColor: eL.map(l => l==='K='+kDipilih ? '#EF4444' : col),
-      pointBorderColor:'#1A1A1A', pointBorderWidth:2, fill:true
-    }]},
-    options: {
-      responsive:true, maintainAspectRatio:false,
-      plugins:{legend:{display:false}},
-      scales:{
-        x:{grid:{color:'#E5E7EB'},ticks:{color:'#374151',font:{weight:'700'}}},
-        y:{grid:{color:'#E5E7EB'},ticks:{color:'#374151'}}
-      }
-    }
-  });
-});
-
-new Chart(document.getElementById('clusterSilChart'), {
-  type:'bar',
-  data:{ labels:cQ.map(i=>'C'+i.cluster), datasets:[{
-    label:'Silhouette Rata-rata', data:cQ.map(i=>i.silhouette_rata2),
-    backgroundColor:cQ.map((_,i)=>CC[i%CC.length]),
-    borderColor:'#1A1A1A', borderWidth:2, borderRadius:8, borderSkipped:false
-  }]},
-  options:{
-    responsive:true, maintainAspectRatio:false,
-    plugins:{legend:{display:false}},
-    scales:{
-      y:{beginAtZero:true, grid:{color:'#E5E7EB'}, ticks:{color:'#374151'}},
-      x:{grid:{display:false}, ticks:{color:'#1A1A1A',font:{weight:'700',size:14}}}
-    }
+  // ── Opsi sumbu standar ───────────────────────────────────────────────────
+  function axisOpts(xLabel, yLabel) {
+    return {
+      x: {
+        title: { display: true, text: xLabel, font: { weight: '700', size: 12 }, color: '#4B5563' },
+        grid: { color: '#E5E7EB' },
+        ticks: { color: '#374151', font: { weight: '700' } },
+      },
+      y: {
+        title: { display: true, text: yLabel, font: { weight: '700', size: 12 }, color: '#4B5563' },
+        grid: { color: '#E5E7EB' },
+        ticks: { color: '#374151' },
+      },
+    };
   }
-});
 
-function downloadChart(id,name){
-  const a=document.createElement('a'); a.download=name;
-  a.href=document.getElementById(id).toDataURL('image/png'); a.click();
-}
+  // ── 1. Elbow Method (hanya render jika tidak ada gambar PNG) ─────────────
+  const elbowCanvas = document.getElementById('elbowChart');
+  if (elbowCanvas) {
+    new Chart(elbowCanvas, {
+      type: 'line',
+      data: {
+        labels: eLabels,
+        datasets: [{
+          label: 'Inertia / SSE',
+          data: eSSE,
+          borderColor: BLUE, backgroundColor: BLUE + '22',
+          borderWidth: 3, tension: 0.3, pointRadius: 7, fill: true,
+          pointBackgroundColor: pointColors(eLabels, '#fff'),
+          pointBorderColor: pointColors(eLabels, BLUE),
+          pointBorderWidth: 2.5,
+        }],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: true, labels: { color: '#374151', font: { size: 12 } } },
+          tooltip: { callbacks: {
+            label: ctx => `Inertia: ${ctx.parsed.y.toLocaleString('id-ID', { maximumFractionDigits: 2 })}`,
+          }},
+        },
+        scales: axisOpts('Jumlah Cluster (k)', 'Inertia / SSE'),
+      },
+    });
+  }
+
+  // ── 2. Silhouette Score (hanya render jika tidak ada gambar PNG) ──────────
+  const silCanvas = document.getElementById('silhouetteChart');
+  if (silCanvas) {
+    new Chart(silCanvas, {
+      type: 'line',
+      data: {
+        labels: eLabels,
+        datasets: [{
+          label: 'Silhouette Score',
+          data: eSil,
+          borderColor: GREEN, backgroundColor: GREEN + '22',
+          borderWidth: 3, tension: 0.3, pointRadius: 7, fill: true,
+          pointBackgroundColor: pointColors(eLabels, '#fff'),
+          pointBorderColor: pointColors(eLabels, GREEN),
+          pointBorderWidth: 2.5,
+        }],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: true, labels: { color: '#374151', font: { size: 12 } } },
+          tooltip: { callbacks: {
+            label: ctx => `Silhouette: ${ctx.parsed.y.toFixed(4)}`,
+          }},
+        },
+        scales: axisOpts('Jumlah Cluster (k)', 'Silhouette Score'),
+      },
+    });
+  }
+
+  // ── 3. Silhouette Rata-rata per Cluster (bar chart) ──────────────────────
+  const clusterSilCanvas = document.getElementById('clusterSilChart');
+  if (clusterSilCanvas && cQuality.length > 0) {
+    new Chart(clusterSilCanvas, {
+      type: 'bar',
+      data: {
+        labels: cQuality.map(d => 'C' + d.cluster),
+        datasets: [{
+          label: 'Silhouette Rata-rata',
+          data: cQuality.map(d => d.silhouette_rata2),
+          backgroundColor: cQuality.map((_, i) => PALETTE[i % PALETTE.length]),
+          borderColor: '#1A1A1A', borderWidth: 2,
+          borderRadius: 8, borderSkipped: false,
+        }],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: true, labels: { color: '#374151', font: { size: 12 } } },
+          tooltip: { callbacks: {
+            label: ctx => `Silhouette: ${ctx.parsed.y.toFixed(4)}`,
+          }},
+        },
+        scales: axisOpts('Cluster', 'Silhouette Score'),
+      },
+    });
+  }
+
+}());
 </script>
+{% endif %}
 {% endblock %}

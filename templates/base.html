@@ -45,6 +45,7 @@
   </div>
 
   <nav class="sidebar-menu">
+    {# ── Menu utama (tanpa item Laporan, Evaluasi, Visualisasi, Interpretasi, Hasil) ── #}
     {% set nav_main = [
       ('dashboard',    'fa-gauge-high',   'Dashboard'),
       ('dataset',      'fa-database',     'Dataset'),
@@ -75,7 +76,7 @@
     <div class="sidebar-sub-menu {{ 'open' if laporan_active else '' }}" id="sidebar-laporan-menu">
       {% set laporan_nav = [
         ('laporan_evaluasi',    'fa-star-half-stroke', 'Evaluasi'),
-        ('laporan_visualisasi', 'fa-chart-line',    'Visualisasi'),
+        ('laporan_visualisasi', 'fa-chart-line',       'Visualisasi'),
         ('laporan_interpretasi','fa-lightbulb',        'Interpretasi'),
         ('laporan_hasil',       'fa-table-list',       'Hasil'),
       ] %}
@@ -152,6 +153,117 @@
 
 <!-- ── Scripts ──────────────────────────────────────── -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+/* ================================================================
+   downloadImg — universal high-resolution image download helper
+   Supports:
+     • Chart.js canvas  → re-drawn onto offscreen canvas at 3× scale
+     • <img> with base64 src → fetched via Blob URL (identical pixels)
+   Usage:
+     downloadImg('myCanvasId',  'elbow-method.png')       — canvas
+     downloadImg('myImgId',     'silhouette-score.png')   — img tag
+     downloadImg(null, 'wordcloud-cluster-1.png', b64str) — raw b64
+   ================================================================ */
+window.downloadImg = (function () {
+  'use strict';
+
+  /**
+   * Download a Chart.js canvas at high resolution.
+   * Renders onto an offscreen canvas at SCALE× the CSS size so the
+   * exported PNG stays sharp on both standard and Retina displays.
+   */
+  function _downloadCanvas(canvas, filename) {
+    const SCALE   = Math.max(window.devicePixelRatio || 1, 2) * 1.5; // ≥3×
+    const w       = canvas.width;
+    const h       = canvas.height;
+    const offscreen = document.createElement('canvas');
+    offscreen.width  = w * SCALE;
+    offscreen.height = h * SCALE;
+    const ctx = offscreen.getContext('2d');
+    // White background so transparent areas become white in PNG
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, offscreen.width, offscreen.height);
+    ctx.drawImage(canvas, 0, 0, offscreen.width, offscreen.height);
+    _triggerDownload(offscreen.toDataURL('image/png', 1.0), filename);
+  }
+
+  /**
+   * Download a base64-encoded PNG (from <img src="data:image/png;base64,…">
+   * or a raw b64 string). Uses a Blob URL so the file is identical to the
+   * source — no re-encoding loss, no quality reduction.
+   */
+  function _downloadBase64(b64, filename) {
+    try {
+      const binary = atob(b64);
+      const bytes  = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      const blob   = new Blob([bytes], { type: 'image/png' });
+      const url    = URL.createObjectURL(blob);
+      _triggerDownload(url, filename);
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+    } catch (e) {
+      // Fallback: plain data-URI anchor
+      _triggerDownload('data:image/png;base64,' + b64, filename);
+    }
+  }
+
+  function _triggerDownload(href, filename) {
+    const a      = document.createElement('a');
+    a.href       = href;
+    a.download   = filename;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    // Small delay before removal so Firefox can start the download
+    setTimeout(() => { try { document.body.removeChild(a); } catch (_) {} }, 500);
+  }
+
+  /**
+   * Public API
+   * @param {string|null} idOrNull  — element id (canvas or img), or null
+   * @param {string}      filename  — desired download filename
+   * @param {string}      [b64]     — raw base64 string (when idOrNull is null)
+   */
+  return function downloadImg(idOrNull, filename, b64) {
+    // Case 1: raw base64 string passed directly
+    if (!idOrNull && b64) {
+      _downloadBase64(b64, filename);
+      return;
+    }
+
+    const el = document.getElementById(idOrNull);
+    if (!el) {
+      console.warn('[downloadImg] element not found:', idOrNull);
+      return;
+    }
+
+    // Case 2: img tag with base64 src
+    if (el.tagName === 'IMG') {
+      const src = el.getAttribute('src') || '';
+      const match = src.match(/^data:image\/[^;]+;base64,(.+)$/);
+      if (match) {
+        _downloadBase64(match[1], filename);
+      } else {
+        // External URL — anchor download
+        _triggerDownload(src, filename);
+      }
+      return;
+    }
+
+    // Case 3: Chart.js canvas
+    if (el.tagName === 'CANVAS') {
+      _downloadCanvas(el, filename);
+      return;
+    }
+
+    console.warn('[downloadImg] unsupported element type:', el.tagName);
+  };
+}());
+
+// Legacy alias so old onclick="downloadChart(id,name)" calls still work
+window.downloadChart        = window.downloadImg;
+window.downloadLaporanChart = window.downloadImg;
+</script>
 <script>
 (function () {
   'use strict';

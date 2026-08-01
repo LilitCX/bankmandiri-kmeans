@@ -29,11 +29,13 @@ USERS: dict[str, str] = {
 COMPANY_NAME: str = "PT Bank Mandiri (Persero) Tbk"
 COMPANY_ADDRESS: str = (
     "Senayan City, Lantai LGF, No. 07B, Jl. Asia Afrika Lot.19, "
-    "Gelora, Tanah Abang, Jakarta Pusat"
+    "Gelora, Tanah Abang, Jakarta Pusat 10270"
 )
+COMPANY_PHONE: str = "(021) 5263000"
+COMPANY_EMAIL: str = "corporate.secretary@bankmandiri.co.id"
 COMPANY_WEBSITE: str = "www.bankmandiri.co.id"
-SIGNER_NAME: str = "Rahmad Supandi"
-SIGNER_TITLE: str = "Direktur"
+SIGNER_NAME: str = "Gilang Afandi Harahap"
+SIGNER_TITLE: str = "Pimpinan"
 LOGO_PATH: str = os.path.join(STATIC_FOLDER, "logo.png")
 
 # ── Pipeline ──────────────────────────────────────────────────────────────────

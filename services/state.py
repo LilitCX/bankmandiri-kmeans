@@ -37,6 +37,9 @@ def _empty() -> dict[str, Any]:
         "eval_labels": [],
         "eval_sse": [],
         "eval_silhouette": [],
+        "eval_chart_b64": None,
+        "elbow_chart_b64": None,
+        "silhouette_chart_b64": None,
         "message": None,
         "error": None,
     }
@@ -81,4 +84,7 @@ def reset_pipeline() -> None:
         "eval_labels": [],
         "eval_sse": [],
         "eval_silhouette": [],
+        "eval_chart_b64": None,
+        "elbow_chart_b64": None,
+        "silhouette_chart_b64": None,
     })

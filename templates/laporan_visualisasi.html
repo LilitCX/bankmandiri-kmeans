@@ -23,15 +23,25 @@
 
 <div class="laporan-container">
 
-  {# ── Kop Surat ── #}
+  {# ── Kop Surat Profesional ── #}
   <div class="laporan-kop">
-    <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo Perusahaan" class="laporan-kop-logo">
+    <img src="{{ url_for('static', filename='logo.png') }}"
+         alt="Logo PT Bank Mandiri" class="laporan-kop-logo"
+         onerror="this.style.display='none'">
     <div class="laporan-kop-text">
       <h2>PT Bank Mandiri (Persero) Tbk</h2>
-      <p>Senayan City, Lantai LGF, No. 07B, Jl. Asia Afrika Lot.19, Gelora, Tanah Abang, Jakarta Pusat</p>
-      <p>www.bankmandiri.co.id</p>
+      <p><strong>Alamat&nbsp;:</strong>
+         Senayan City, Lantai LGF, No. 07B, Jl. Asia Afrika Lot.19,
+         Gelora, Tanah Abang, Jakarta Pusat 10270</p>
+      <p>
+        <strong>Telepon&nbsp;:</strong> (021) 5263000
+        &nbsp;&nbsp;
+        <strong>Email&nbsp;:</strong> corporate.secretary@bankmandiri.co.id
+      </p>
+      <p><strong>Website&nbsp;:</strong> www.bankmandiri.co.id</p>
     </div>
   </div>
+  <hr class="laporan-kop-divider" style="border-top:2px solid #E2E8F0;margin:0 0 0;">
   <div class="laporan-report-title">
     <h3><i class="fa-solid fa-chart-line me-2"></i>Laporan Visualisasi Cluster</h3>
     <p>Pengelompokan Opini Publik TikTok Bank Mandiri &mdash; K-Means Clustering</p>
@@ -46,10 +56,6 @@
     <div class="laporan-meta-item">
       <span class="meta-label">Jumlah Cluster</span>
       <span class="meta-value">{{ state.metrics.jumlah_cluster }}</span>
-    </div>
-    <div class="laporan-meta-item">
-      <span class="meta-label">Silhouette Score</span>
-      <span class="meta-value">{{ state.metrics.silhouette_score }}</span>
     </div>
     <div class="laporan-meta-item">
       <span class="meta-label">K Dipilih</span>
@@ -67,6 +73,16 @@
     </h3>
     <div style="background:var(--nb-white);border:var(--nb-border);border-radius:10px;
                 box-shadow:var(--nb-shadow);padding:24px;">
+      <div class="chart-header" style="margin-bottom:16px;">
+        <h5 class="chart-title" style="margin:0;font-size:14px;font-weight:700;color:#1E293B;">
+          Jumlah Komentar per Cluster
+        </h5>
+        <button class="btn-download-chart"
+                onclick="downloadImg('laporanBarChart','distribusi-cluster.png')"
+                title="Unduh distribusi-cluster.png">
+          <i class="fa-solid fa-download"></i> PNG
+        </button>
+      </div>
       <div style="height:320px;"><canvas id="laporanBarChart"></canvas></div>
     </div>
     <div class="table-responsive mt-4" style="border-radius:8px;overflow:hidden;border:2px solid #E2E8F0;box-shadow:none;">
@@ -119,6 +135,16 @@
     </p>
     <div style="background:var(--nb-white);border:var(--nb-border);border-radius:10px;
                 box-shadow:var(--nb-shadow);padding:24px;">
+      <div class="chart-header" style="margin-bottom:16px;">
+        <h5 class="chart-title" style="margin:0;font-size:14px;font-weight:700;color:#1E293B;">
+          Proyeksi t-SNE 2D — Sebaran Antar Cluster
+        </h5>
+        <button class="btn-download-chart"
+                onclick="downloadImg('laporanScatterChart','scatter-tsne-cluster.png')"
+                title="Unduh scatter-tsne-cluster.png">
+          <i class="fa-solid fa-download"></i> PNG
+        </button>
+      </div>
       <div style="height:380px;position:relative;"><canvas id="laporanScatterChart"></canvas></div>
       <!-- Legend server-side (Jinja) — tidak bisa ter-cache -->
       {% set CC_l = ["#2563EB","#F97316","#22C55E","#8B5CF6","#EF4444","#EC4899","#14B8A6","#6366F1","#FFE44D","#64748B"] %}
@@ -147,28 +173,31 @@
     </p>
     <div class="row g-4">
       {% for cluster_id, img in state.wordclouds.items() %}
-      {% set ci = cluster_id % 10 %}
+      {% set cid = cluster_id|int %}
+      {% set ci = cid % 10 %}
       {% set colors = ['#2563EB','#F97316','#22C55E','#8B5CF6','#EF4444','#EC4899','#14B8A6','#6366F1','#FFE44D','#64748B'] %}
       <div class="col-md-6">
         <div style="background:var(--nb-white);border:2px solid #E2E8F0;border-top:4px solid {{ colors[ci] }};
                     border-radius:10px;padding:18px;height:100%;">
           <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
             <h6 style="font-weight:800;margin:0;color:var(--nb-navy);font-size:14px;">
-              <span class="badge" style="background:{{ colors[ci] }};color:#fff;border:1.5px solid #1A1A1A;margin-right:6px;font-size:11px;">C{{ cluster_id }}</span>
+              <span class="badge" style="background:{{ colors[ci] }};color:#fff;border:1.5px solid #1A1A1A;margin-right:6px;font-size:11px;">C{{ cid }}</span>
               {% for item in state.cluster_summary %}
-                {% if item.cluster == cluster_id %}{{ item.label }}{% endif %}
+                {% if item.cluster == cid %}{{ item.label }}{% endif %}
               {% endfor %}
             </h6>
             {% if img %}
-            <a href="data:image/png;base64,{{ img }}" download="wordcloud_c{{ cluster_id }}.png"
-               class="btn btn-warning btn-sm" style="font-size:12px;">
-              <i class="fa-solid fa-download me-1"></i>PNG
-            </a>
+            <button class="btn-download-chart"
+                    onclick="downloadImg('wc-laporan-{{ cid }}','wordcloud-cluster-{{ cid }}.png')"
+                    title="Unduh wordcloud-cluster-{{ cid }}.png">
+              <i class="fa-solid fa-download"></i> PNG
+            </button>
             {% endif %}
           </div>
           {% if img %}
-          <img src="data:image/png;base64,{{ img }}" class="img-fluid w-100"
-               style="border:2px solid #E2E8F0;border-radius:8px;" alt="Wordcloud Cluster {{ cluster_id }}">
+          <img id="wc-laporan-{{ cid }}"
+               src="data:image/png;base64,{{ img }}" class="img-fluid w-100"
+               style="border:2px solid #E2E8F0;border-radius:8px;" alt="Wordcloud Cluster {{ cid }}">
           {% else %}
           <div style="padding:24px;background:#F8FAFC;border:2px solid #E2E8F0;border-radius:8px;
                       text-align:center;color:#94A3B8;">
@@ -176,7 +205,7 @@
             Tidak ada kata cukup untuk wordcloud.
           </div>
           {% endif %}
-          {% if state.top_words and state.top_words[cluster_id] %}
+          {% if state.top_words and state.top_words[cluster_id] is defined and state.top_words[cluster_id] %}
           <div class="mt-3">
             <p style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">
               Top Words
@@ -216,8 +245,8 @@
     </div>
     <div class="laporan-signature-right">
       <p class="sig-greeting">Mengetahui,</p>
-      <p class="sig-name">Rahmad Supandi</p>
-      <p class="sig-title">Direktur</p>
+      <p class="sig-name">Gilang Afandi Harahap</p>
+      <p class="sig-title">Pimpinan</p>
     </div>
   </div>
 
@@ -291,6 +320,7 @@
     }
   });
   {% endif %}
+
 }());
 </script>
 {% endif %}
