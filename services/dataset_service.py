@@ -158,9 +158,25 @@ def apply_metadata(metadata: dict, result_dir: str) -> None:
     evaluation = metadata.get("evaluation", {})
     k_values = evaluation.get("k_values", [])
     wc_files = metadata.get("files", {}).get("wordclouds", {})
+    files_meta = metadata.get("files", {})
+    storage_urls = metadata.get("storage_urls", {})
 
-    # Muat gambar grafik evaluasi dari disk (base64) agar bisa di-embed di halaman
-    def _load_img_b64(fname: str | None) -> str | None:
+    # Helper: load gambar sebagai base64.
+    # Prioritas: (1) URL Supabase dari storage_urls, (2) file lokal di result_dir.
+    def _load_img_b64(key: str, fname: str | None) -> str | None:
+        # Prioritas 1: URL Supabase — fetch langsung dari internet
+        supabase_url = storage_urls.get(key)
+        if supabase_url and supabase_url.startswith("http"):
+            try:
+                import urllib.request
+                with urllib.request.urlopen(supabase_url, timeout=10) as resp:
+                    data = resp.read()
+                if data:
+                    return base64.b64encode(data).decode("utf-8")
+            except Exception as _fe:
+                print(f"[WARN] Gagal fetch {key} dari Supabase URL: {_fe}")
+
+        # Prioritas 2: file lokal
         if not fname or not result_dir:
             return None
         path = os.path.join(result_dir, fname)
@@ -169,18 +185,32 @@ def apply_metadata(metadata: dict, result_dir: str) -> None:
         with open(path, "rb") as fh:
             return base64.b64encode(fh.read()).decode("utf-8")
 
-    files_meta = metadata.get("files", {})
-    eval_chart_b64      = _load_img_b64(files_meta.get("chart_evaluation"))
-    elbow_chart_b64     = _load_img_b64(files_meta.get("chart_elbow"))
-    silhouette_chart_b64= _load_img_b64(files_meta.get("chart_silhouette"))
+    eval_chart_b64       = _load_img_b64("chart_evaluation",   files_meta.get("chart_evaluation"))
+    elbow_chart_b64      = _load_img_b64("chart_elbow",        files_meta.get("chart_elbow"))
+    silhouette_chart_b64 = _load_img_b64("chart_silhouette",   files_meta.get("chart_silhouette"))
 
     wordclouds: dict = {}
     top_words: dict = {}
 
+    # storage_urls["wordclouds"] adalah dict {str(cid): url}
+    wc_storage_urls = storage_urls.get("wordclouds", {})
+
     for item in summary:
         cid = int(item["cluster"])
         top_words[cid] = item.get("top_words", [])
-        # Prioritas 1: load dari file PNG di disk
+        # Prioritas 1: URL Supabase Storage
+        wc_url = wc_storage_urls.get(str(cid))
+        if wc_url and wc_url.startswith("http"):
+            try:
+                import urllib.request
+                with urllib.request.urlopen(wc_url, timeout=10) as resp:
+                    wc_data = resp.read()
+                if wc_data:
+                    wordclouds[cid] = base64.b64encode(wc_data).decode("utf-8")
+                    continue
+            except Exception as _fe:
+                print(f"[WARN] Gagal fetch wordcloud cluster {cid} dari Supabase: {_fe}")
+        # Prioritas 2: file lokal di disk
         wordclouds[cid] = _load_wordcloud_from_disk(result_dir, wc_files.get(str(cid)))
 
     # Prioritas 2: generate dari komentar_bersih di result_df (bisa dari preview 100 baris)
@@ -275,6 +305,8 @@ def try_restore_latest(username: str | None = None) -> bool:
     metadata = get_latest_clustering_result(username=username)
     if metadata:
         try:
+            # Jika ada storage_urls (gambar di Supabase), result_dir tidak wajib ada.
+            # Pakai /tmp/restored_results sebagai fallback untuk file CSV.
             result_dir = "/tmp/restored_results"
             os.makedirs(result_dir, exist_ok=True)
             apply_metadata(metadata, result_dir)

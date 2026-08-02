@@ -359,17 +359,28 @@ tr:nth-child(odd)  td { background: #ffffff;  }
 
 /* ── Tanda tangan ── */
 .signature-block {
-    margin-top: 24px; padding-bottom: 12px; text-align: right;
+    margin-top: 50px; padding-bottom: 12px;
     page-break-inside: avoid;
 }
-.signature-block .city-date { font-size: 8pt; color: #475569; margin-bottom: 2px; }
-.signature-block .greeting  { font-size: 8pt; color: #475569; margin-bottom: 38px; }
-.signature-block .sig-line  {
+/* Tabel 1x2: kolom kiri spacer kosong, kolom kanan berisi ttd.
+   Ini menempatkan blok ttd secara PASTI di sisi kanan halaman
+   (lebih stabil lintas engine daripada margin:auto di xhtml2pdf),
+   sementara text-align:center pada kolom kanan membuat tanggal,
+   "Mengetahui,", garis ttd, nama, dan jabatan semuanya sejajar
+   tengah terhadap lebar kolom tersebut. */
+.sig-table { width: 100%; border-collapse: collapse; margin-bottom: 0; }
+.sig-table td { border: none; background: transparent; padding: 0; vertical-align: top; }
+.sig-spacer { width: 62%; }
+.sig-cell   { width: 38%; text-align: center; }
+
+.sig-cell .city-date { font-size: 8pt; color: #475569; margin-bottom: 2px; white-space: nowrap; }
+.sig-cell .greeting  { font-size: 8pt; color: #475569; margin-bottom: 38px; }
+.sig-cell .sig-line  {
     border-top: 1.5px solid #1E293B;
-    width: 140px; margin: 0 0 2px auto;
+    width: 140px; margin: 0 auto 2px auto;
 }
-.signature-block .sig-name  { font-size: 9pt; font-weight: 800; color: #1E293B; }
-.signature-block .sig-title { font-size: 8pt; color: #475569; }
+.sig-cell .sig-name  { font-size: 9pt; font-weight: 800; color: #1E293B; }
+.sig-cell .sig-title { font-size: 8pt; color: #475569; }
 
 /* ── Page break ── */
 .page-break { page-break-before: always; }
@@ -425,13 +436,27 @@ def _title_block(judul: str, generated_at: str) -> str:
 
 
 def _signature() -> str:
+    """Blok ttd pakai tabel 1x2 agar posisi rata kanan konsisten di
+    WeasyPrint maupun xhtml2pdf (margin:auto kurang stabil di xhtml2pdf).
+    Kolom kiri = spacer kosong; kolom kanan = ttd dengan lebar tetap
+    dan isi rata tengah. style inline pada <td> ditambahkan sebagai
+    jaring pengaman agar aturan tabel umum (border/background zebra-stripe)
+    tidak ikut ter-apply ke tabel ttd ini.
+    """
     return (
         f'<div class="signature-block">'
+        f'<table class="sig-table" style="border:none;">'
+        f'<tr>'
+        f'<td class="sig-spacer" style="border:none;background:transparent;padding:0;"></td>'
+        f'<td class="sig-cell" style="border:none;background:transparent;padding:0;text-align:center;">'
         f'<p class="city-date">{_tanggal_indonesia()}</p>'
         f'<p class="greeting">Mengetahui,</p>'
         f'<div class="sig-line"></div>'
         f'<p class="sig-name">{SIGNER_NAME}</p>'
         f'<p class="sig-title">{SIGNER_TITLE}</p>'
+        f'</td>'
+        f'</tr>'
+        f'</table>'
         f'</div>'
     )
 

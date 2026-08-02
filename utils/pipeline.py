@@ -768,7 +768,7 @@ def run_clustering(
     X_fitur = csr_matrix(np.array([fitur_topik(t) for t in df["komentar_bersih"]]) * bobot)
     X_gabungan = hstack([X_tfidf, X_fitur])
 
-    n_comp = min(60, X_gabungan.shape[1] - 1, len(df) - 1)
+    n_comp = min(30, X_gabungan.shape[1] - 1, len(df) - 1)
     n_comp = max(2, n_comp)
     svd = TruncatedSVD(n_components=n_comp, random_state=42)
     lsa = make_pipeline(svd, Normalizer(copy=False))
@@ -789,9 +789,9 @@ def run_clustering(
                 initial_centroids[c] = X_lsa[mask.to_numpy()].mean(axis=0)
             else:
                 initial_centroids[c] = X_lsa[rng.integers(0, len(X_lsa))].copy()
-        kmeans = KMeans(n_clusters=jumlah_cluster, init=initial_centroids, n_init=1, max_iter=500, random_state=42)
+        kmeans = KMeans(n_clusters=jumlah_cluster, init=initial_centroids, n_init=1, max_iter=300, random_state=42)
     else:
-        kmeans = KMeans(n_clusters=jumlah_cluster, init="k-means++", n_init=15, max_iter=500, random_state=42)
+        kmeans = KMeans(n_clusters=jumlah_cluster, init="k-means++", n_init=5, max_iter=300, random_state=42)
 
     df["cluster"] = kmeans.fit_predict(X_lsa)
     df["x_lsa"] = X_lsa[:, 0]
@@ -810,7 +810,7 @@ def run_clustering(
                 n_components=2,
                 perplexity=perplexity_val,
                 random_state=42,
-                max_iter=1000,
+                max_iter=500,
                 learning_rate="auto",
                 init="pca",
             )
@@ -820,7 +820,7 @@ def run_clustering(
                 n_components=2,
                 perplexity=perplexity_val,
                 random_state=42,
-                n_iter=1000,
+                n_iter=500,
                 learning_rate="auto",
                 init="pca",
             )
@@ -930,8 +930,8 @@ def run_clustering(
             n_clusters=k,
             init="k-means++",
             random_state=42,
-            n_init=10,
-            max_iter=500,   # sama dengan clustering utama agar inertia sebanding
+            n_init=5,          # turun dari 10 → 5, cukup untuk evaluasi komparatif
+            max_iter=300,
         )
         lbl_eval = km_eval.fit_predict(X_lsa)
         inertia_list.append(round(float(km_eval.inertia_), 4))
@@ -1034,4 +1034,23 @@ def run_clustering(
     }
     with open(os.path.join(result_dir, "metadata.json"), "w", encoding="utf-8") as f:
         json.dump(metadata, f, ensure_ascii=False, indent=2)
+
+    # ── Upload asset ke Supabase Storage (opsional, hanya jika aktif) ─────────
+    # Dilakukan SETELAH semua file PNG & CSV selesai dibuat ke disk.
+    # Jika Supabase tidak aktif (USE_SUPABASE=0 / belum dikonfigurasi),
+    # blok ini dilewati secara senyap — tidak mempengaruhi alur normal.
+    try:
+        from services.db import upload_result_assets, SUPABASE_OK, USE_SUPABASE  # type: ignore
+        if USE_SUPABASE and SUPABASE_OK:
+            result_id = os.path.basename(result_dir.rstrip("/\\"))
+            storage_urls = upload_result_assets(result_dir, result_id, metadata["files"])
+            if storage_urls:
+                metadata["storage_urls"] = storage_urls
+                # Perbarui metadata.json dengan URL Supabase
+                with open(os.path.join(result_dir, "metadata.json"), "w", encoding="utf-8") as f:
+                    json.dump(metadata, f, ensure_ascii=False, indent=2)
+                print(f"[INFO] {len(storage_urls)} asset berhasil diupload ke Supabase Storage.")
+    except Exception as _e:
+        print(f"[WARN] Upload asset ke Supabase Storage gagal (non-fatal): {_e}")
+
     return metadata

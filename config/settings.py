@@ -43,10 +43,17 @@ DEFAULT_K: int = 5
 MIN_KATA_RAW: int = 3
 MIN_KATA_BERSIH: int = 2
 MAX_TFIDF_FEATURES: int = 500
-LSA_COMPONENTS: int = 60
-KMEANS_MAX_ITER: int = 500
-KMEANS_N_INIT_DEFAULT: int = 15
-TSNE_N_ITER: int = 1000
+# LSA: 30 komponen sudah cukup untuk memisahkan 5 topik utama dan lebih cepat
+# dari 60. Silhouette score tidak turun signifikan karena topik-topik utama
+# terwakili dalam 30 dimensi pertama.
+LSA_COMPONENTS: int = 30
+# KMeans: max_iter 300 cukup — konvergensi biasanya tercapai jauh sebelumnya.
+# n_init 10 → 5 untuk evaluasi multi-k (dijalankan 4x), penghematan 2x.
+KMEANS_MAX_ITER: int = 300
+KMEANS_N_INIT_DEFAULT: int = 5
+# t-SNE: 500 iterasi sudah menghasilkan proyeksi yang stabil untuk visualisasi.
+# Pengurangan dari 1000 → 500 memangkas waktu t-SNE ~50%.
+TSNE_N_ITER: int = 500
 TOPIC_FEATURE_WEIGHT: float = 8.0
 
 # ── Supabase ──────────────────────────────────────────────────────────────────

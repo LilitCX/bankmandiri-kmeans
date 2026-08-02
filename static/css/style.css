@@ -1451,18 +1451,22 @@ hr { border-color: var(--nb-black); opacity: 1; border-width: 2px; }
    LAPORAN — SIGNATURE BLOCK
 ============================================================ */
 .laporan-signature-block {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  align-items: end;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
   margin-top: 56px;
   padding-top: 24px;
   border-top: 2px solid #E2E8F0;
+  flex-wrap: nowrap;
+  gap: 16px;
 }
 .laporan-signature-left {
   font-size: 14px;
   font-weight: 700;
   color: var(--nb-navy);
   line-height: 1.7;
+  min-width: 200px;
+  flex-shrink: 0;
 }
 .laporan-signature-left .sig-date {
   font-size: 14px;
@@ -1470,31 +1474,36 @@ hr { border-color: var(--nb-black); opacity: 1; border-width: 2px; }
   color: var(--nb-navy);
 }
 .laporan-signature-right {
+  text-align: center;
+  min-width: 220px;
+  flex-shrink: 0;
+  margin-left: auto;           /* dorong blok TTD ke ujung kanan */
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;         /* konten dalam blok tetap tengah */
 }
 .laporan-signature-right .sig-greeting {
   font-size: 13px;
   color: #475569;
   margin: 0 0 72px 0;
+  align-self: center;
 }
 .laporan-signature-right .sig-name {
   font-size: 15px;
   font-weight: 800;
   color: var(--nb-navy);
   border-top: 2.5px solid var(--nb-navy);
-  min-width: 200px;
+  width: 220px;                /* lebar garis + nama konsisten */
   padding-top: 8px;
-  text-align: left;
-  margin: 0;
+  text-align: center;
 }
 .laporan-signature-right .sig-title {
   font-size: 13px;
   color: #475569;
   font-weight: 600;
-  margin: 4px 0 0 0;
-  text-align: left;
+  margin-top: 4px;
+  text-align: center;
+  width: 220px;
 }
 
 /* ============================================================
@@ -1531,17 +1540,22 @@ hr { border-color: var(--nb-black); opacity: 1; border-width: 2px; }
   .laporan-signature-block {
     page-break-inside: avoid;
     margin-top: 32px;
-    display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
-    align-items: end !important;
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: flex-end !important;
+    flex-wrap: nowrap !important;
   }
   .laporan-signature-left {
     text-align: left !important;
   }
   .laporan-signature-right {
+    text-align: center !important;
+    min-width: 220px !important;
+    margin-left: auto !important;
     display: flex !important;
     flex-direction: column !important;
-    align-items: flex-start !important;
+    align-items: center !important;
   }
   body { font-size: 11pt; }
   /* Sembunyikan pagination saat print, tampilkan semua baris */

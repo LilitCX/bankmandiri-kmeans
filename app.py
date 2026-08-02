@@ -347,12 +347,22 @@ def clustering():
             # Simpan ke Supabase agar persisten lintas restart.
             # Isi CSV di-encode base64 dan disimpan di kolom csv_content
             # sehingga bisa di-restore setelah server restart tanpa file lokal.
-            save_clustering_result(
+            saved_ok = save_clustering_result(
                 result_id=result_id,
                 metadata=metadata,
                 username=session.get("username", "unknown"),
                 csv_path=STATE.get("upload_path"),
             )
+            # Hapus folder results lokal jika berhasil tersimpan ke Supabase
+            # agar file tidak menumpuk di disk. apply_metadata sudah selesai
+            # sehingga semua data ada di STATE — folder tidak dibutuhkan lagi.
+            if saved_ok and os.path.isdir(result_dir):
+                import shutil as _shutil
+                try:
+                    _shutil.rmtree(result_dir, ignore_errors=True)
+                    print(f"[INFO] Folder results lokal {result_dir} dihapus setelah upload ke Supabase.")
+                except Exception as _rm_err:
+                    print(f"[WARN] Gagal hapus folder lokal {result_dir}: {_rm_err}")
             # Bersihkan hasil lama (simpan 5 terakhir per user)
             delete_old_clustering_results(
                 keep_last=5,
